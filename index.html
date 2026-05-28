@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a1628" />
+  <meta name="description" content="Live Cricket Score Counter - Real-time match scoring" />
+  <title>CricLive Scorer</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="screen active">
+      <div class="setup-bg"></div>
+      <div class="setup-container">
+        <div class="logo-area">
+          <div class="cricket-icon">🏏</div>
+          <h1 class="logo-title">CricLive</h1>
+          <p class="logo-sub">Real-time Cricket Scorer</p>
+        </div>
+
+        <div class="setup-card">
+          <h2 class="card-title">Match Setup</h2>
+
+          <div class="setup-row">
+            <div class="setup-group">
+              <label>Team A Name</label>
+              <input type="text" id="teamA-name" placeholder="e.g. Bangladesh" maxlength="20" />
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="setup-group">
+              <label>Team B Name</label>
+              <input type="text" id="teamB-name" placeholder="e.g. India" maxlength="20" />
+            </div>
+          </div>
+
+          <div class="setup-row">
+            <div class="setup-group">
+              <label>Total Overs</label>
+              <input type="number" id="total-overs" placeholder="20" min="1" max="50" value="20" />
+            </div>
+            <div class="setup-group">
+              <label>Players per Side</label>
+              <input type="number" id="players-count" placeholder="11" min="2" max="11" value="11" />
+            </div>
+          </div>
+
+          <!-- BATTING TEAM -->
+          <div class="section-title">Batting Team — Player Names</div>
+          <div id="batting-players" class="players-grid"></div>
+
+          <!-- BOWLING TEAM -->
+          <div class="section-title">Bowling Team — Player Names</div>
+          <div id="bowling-players" class="players-grid"></div>
+
+          <!-- BOWLER OVER ALLOCATION -->
+          <div class="section-title">Bowler Over Allocation <span class="over-hint" id="over-hint"></span></div>
+          <div id="bowler-overs-grid" class="bowler-overs-grid"></div>
+          <div id="over-validation" class="over-validation"></div>
+
+          <button id="start-match-btn" class="btn-primary" onclick="startMatch()">Start Match 🏏</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORING SCREEN -->
+    <div id="scoring-screen" class="screen">
+      <header class="scorer-header">
+        <div class="header-teams" id="header-teams"></div>
+        <div class="header-meta">
+          <span id="header-format"></span>
+          <button class="btn-icon" onclick="showInnings2Prompt()" id="innings-switch-btn" style="display:none">2nd Inn.</button>
+          <button class="btn-icon danger" onclick="confirmReset()">↺ Reset</button>
+        </div>
+      </header>
+
+      <!-- SCOREBOARD -->
+      <div class="scoreboard">
+        <div class="score-main">
+          <div class="score-runs" id="score-runs">0</div>
+          <div class="score-wickets" id="score-wickets">/0</div>
+        </div>
+        <div class="score-meta-row">
+          <div class="meta-block">
+            <span class="meta-label">Overs</span>
+            <span class="meta-value" id="score-overs">0.0</span>
+          </div>
+          <div class="meta-block">
+            <span class="meta-label">RR</span>
+            <span class="meta-value" id="score-rr">0.00</span>
+          </div>
+          <div class="meta-block" id="target-block" style="display:none">
+            <span class="meta-label">Target</span>
+            <span class="meta-value" id="score-target">-</span>
+          </div>
+          <div class="meta-block" id="rrr-block" style="display:none">
+            <span class="meta-label">RRR</span>
+            <span class="meta-value" id="score-rrr">-</span>
+          </div>
+        </div>
+
+        <!-- INNINGS INDICATOR -->
+        <div class="innings-bar">
+          <span class="innings-label" id="innings-label">1st Innings</span>
+          <div class="innings-progress">
+            <div class="innings-fill" id="innings-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURRENT OVER -->
+      <div class="current-over-section">
+        <div class="section-header">
+          <span class="sec-title">Current Over</span>
+          <span class="current-bowler-badge" id="current-bowler-badge">—</span>
+        </div>
+        <div class="balls-row" id="balls-row"></div>
+        <div class="over-summary" id="over-summary"></div>
+      </div>
+
+      <!-- BATTING INFO -->
+      <div class="batting-section">
+        <div class="section-header"><span class="sec-title">At Crease</span></div>
+        <div class="batsmen-row">
+          <div class="batsman-card active" id="striker-card">
+            <div class="batsman-name" id="striker-name">—</div>
+            <div class="batsman-stats">
+              <span id="striker-runs">0</span>(<span id="striker-balls">0</span>) <span class="stat-label">4s:</span><span id="striker-fours">0</span> <span class="stat-label">6s:</span><span id="striker-sixes">0</span>
+            </div>
+            <div class="striker-dot">⚡</div>
+          </div>
+          <div class="batsman-card" id="nonstriker-card">
+            <div class="batsman-name" id="nonstriker-name">—</div>
+            <div class="batsman-stats">
+              <span id="nonstriker-runs">0</span>(<span id="nonstriker-balls">0</span>)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCORING BUTTONS -->
+      <div class="scoring-section">
+        <div class="section-header"><span class="sec-title">Score</span></div>
+
+        <div class="runs-grid">
+          <button class="run-btn dot-btn" onclick="addBall({runs:0})">•<span>Dot</span></button>
+          <button class="run-btn" onclick="addBall({runs:1})">1</button>
+          <button class="run-btn" onclick="addBall({runs:2})">2</button>
+          <button class="run-btn" onclick="addBall({runs:3})">3</button>
+          <button class="run-btn four-btn" onclick="addBall({runs:4})">4 🔵</button>
+          <button class="run-btn six-btn" onclick="addBall({runs:6})">6 🔴</button>
+        </div>
+
+        <div class="extras-grid">
+          <button class="extra-btn wide-btn" onclick="addBall({runs:1, extra:'wide'})">Wide</button>
+          <button class="extra-btn noball-btn" onclick="addBall({runs:1, extra:'noball'})">No Ball</button>
+          <button class="extra-btn bye-btn" onclick="addBall({runs:1, extra:'bye'})">Bye</button>
+          <button class="extra-btn legbye-btn" onclick="addBall({runs:1, extra:'legbye'})">Leg Bye</button>
+        </div>
+
+        <div class="action-grid">
+          <button class="action-btn wicket-btn" onclick="showWicketModal()">WICKET 🔴</button>
+          <button class="action-btn undo-btn" onclick="undoLastBall()">↩ Undo</button>
+        </div>
+      </div>
+
+      <!-- BOWLER STATS -->
+      <div class="bowler-section">
+        <div class="section-header"><span class="sec-title">Bowling</span></div>
+        <div id="bowler-stats-list"></div>
+      </div>
+
+      <!-- SCORECARD TOGGLE -->
+      <div class="scorecard-section">
+        <button class="scorecard-toggle" onclick="toggleScorecard()">📋 Full Scorecard</button>
+        <div id="scorecard-panel" class="scorecard-panel" style="display:none">
+          <h3>Batting Scorecard</h3>
+          <div id="batting-scorecard"></div>
+          <h3>Bowling Figures</h3>
+          <div id="bowling-scorecard"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WICKET MODAL -->
+  <div id="wicket-modal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <h3>Wicket! 🔴</h3>
+      <div class="modal-group">
+        <label>Batsman Out</label>
+        <select id="wicket-batsman"></select>
+      </div>
+      <div class="modal-group">
+        <label>Dismissal Type</label>
+        <div class="dismissal-grid">
+          <button class="dis-btn" onclick="selectDismissal('Bowled')">Bowled</button>
+          <button class="dis-btn" onclick="selectDismissal('Caught')">Caught</button>
+          <button class="dis-btn" onclick="selectDismissal('LBW')">LBW</button>
+          <button class="dis-btn" onclick="selectDismissal('Run Out')">Run Out</button>
+          <button class="dis-btn" onclick="selectDismissal('Stumped')">Stumped</button>
+          <button class="dis-btn" onclick="selectDismissal('Hit Wicket')">Hit Wicket</button>
+        </div>
+      </div>
+      <div class="modal-group" id="new-batsman-group">
+        <label>New Batsman</label>
+        <select id="new-batsman-select"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeWicketModal()">Cancel</button>
+        <button class="btn-primary" onclick="confirmWicket()">Confirm Wicket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT BOWLER MODAL -->
+  <div id="bowler-modal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <h3>Select Bowler for Next Over</h3>
+      <div id="bowler-select-list"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="confirmBowlerSelection()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INNINGS 2 MODAL -->
+  <div id="innings2-modal" class="modal-overlay" style="display:none">
+    <div class="modal-card">
+      <h3>Innings Break 🏏</h3>
+      <div id="innings-summary-text"></div>
+      <p>Now <strong id="team2-batting-name"></strong> bats.</p>
+      <p>Target: <strong id="innings2-target"></strong></p>
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="startSecondInnings()">Start 2nd Innings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
