@@ -1351,3 +1351,44 @@ button {
     padding: 16px 13px
   }
 }
+
+
+/* ── TOSS MODAL STYLES ────────────────────────── */
+.toss-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.toss-pick {
+  flex: 1;
+  padding: 16px 10px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.toss-pick:active {
+  background: rgba(255,255,255,0.1);
+}
+
+.toss-pick.sel {
+  border-color: var(--acc, #3b82f6);
+  background: rgba(59,130,246,0.18);
+  color: #fff;
+}
+
+/* Setup page toss hint */
+.toss-note {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--txt2, #8899aa);
+  margin: 4px 0 12px;
+  letter-spacing: 0.02em;
+}
