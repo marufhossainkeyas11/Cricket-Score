@@ -266,8 +266,21 @@
   
   <script src="app.js"></script>
   <script>
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {})
-  </script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // নতুন version এলে user কে জানাও
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // আপনার UI তে একটা "Update available" toast দেখান
+            console.log('New version available! Refresh to update.');
+          }
+        });
+      });
+    }).catch(() => {});
+  }
+</script>
 </body>
 
 </html>
