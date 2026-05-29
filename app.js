@@ -676,7 +676,7 @@ function startInn2() {
   closeModal('inn2Modal');
   const s = G.setup;
   [s.teamA, s.teamB] = [s.teamB, s.teamA];
-  [s.batNames, s.bowlNames] = [s.bowlNames, s.batNames];
+  // [s.batNames, s.bowlNames] = [s.bowlNames, s.batNames];
   
   initMatch(2);
   $('inn2Btn').style.display = 'none';
