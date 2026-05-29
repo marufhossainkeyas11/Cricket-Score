@@ -4,24 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  
-  <!-- Primary Meta -->
   <title>Cricket Score – Cricket Scoring Tool</title>
   <meta name="description" content="A simple and fast cricket scoring tool for tracking live match scores." />
   <meta name="author" content="Your Name" />
   <meta name="theme-color" content="#242e42" />
-  
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   <link rel="shortcut icon" href="./favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
-
-  
-  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json" />
-  
-  <!-- Open Graph (Facebook, WhatsApp, etc.) -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Cricket Score – Cricket Scoring Tool" />
   <meta property="og:description" content="A simple and fast cricket scoring tool for tracking live match scores." />
@@ -30,19 +21,13 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://yoursite.com" />
   <meta property="og:site_name" content="Cricket Score" />
-  
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Cricket Score – Cricket Scoring Tool" />
   <meta name="twitter:description" content="A simple and fast cricket scoring tool for tracking live match scores." />
-  <meta name="twitter:image" content="og-image.png" />
-  
-  <!-- Fonts -->
+  <meta name="twitter:image" content="./og-image.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-  
-  <!-- Stylesheet -->
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -54,7 +39,6 @@
       <div class="setup-glow"></div>
       <div class="setup-wrap">
         
-        <!-- Brand -->
         <div class="brand">
           <img src="./logo.png" alt="Logo" class="brand-svg">
           <div class="brand-text">
@@ -69,9 +53,9 @@
           <div class="step">
             <div class="step-hd">01 · MATCH SETUP</div>
             <div class="row2">
-              <div class="fg"><label>Batting Team</label><input id="teamA" type="text" placeholder="Team A" maxlength="20" /></div>
+              <div class="fg"><label>Team 1</label><input id="teamA" type="text" placeholder="Team A" maxlength="20" /></div>
               <div class="vs">VS</div>
-              <div class="fg"><label>Bowling Team</label><input id="teamB" type="text" placeholder="Team B" maxlength="20" /></div>
+              <div class="fg"><label>Team 2</label><input id="teamB" type="text" placeholder="Team B" maxlength="20" /></div>
             </div>
             <div class="row2 mt8">
               <div class="fg"><label>Total Overs</label><input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" /></div>
@@ -79,30 +63,27 @@
             </div>
           </div>
           
-          <!-- STEP 2 : OVER LIMITS -->
+          <!-- STEP 2 -->
           <div class="step">
             <div class="step-hd">02 · BOWLING OVER LIMITS</div>
             <div class="limit-info" id="limitInfo"></div>
-            
-            <!-- Tier list -->
             <div id="tierList"></div>
-            
-            <!-- Add tier button -->
             <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">+ Add Next Limit Tier</button>
-            
-            <!-- Feasibility -->
             <div class="feasibility" id="feasibility"></div>
           </div>
           
-          <!-- STEP 3 : PLAYERS -->
+          <!-- STEP 3: Team 1 players (no batting/bowling label — toss decides) -->
           <div class="step">
-            <div class="step-hd">03 · BATTING TEAM PLAYERS</div>
+            <div class="step-hd">03 · TEAM 1 PLAYERS</div>
             <div class="pgrid" id="batGrid"></div>
           </div>
           <div class="step">
-            <div class="step-hd">04 · BOWLING TEAM PLAYERS</div>
+            <div class="step-hd">04 · TEAM 2 PLAYERS</div>
             <div class="pgrid" id="bowlGrid"></div>
           </div>
+          
+          <!-- Toss note -->
+          <div class="toss-note">🪙 You'll pick who bats first on the next screen</div>
           
           <button class="start-btn" onclick="startMatch()">🏏 Start Match</button>
         </div>
@@ -126,7 +107,6 @@
         </div>
       </header>
       
-      <!-- Scoreboard -->
       <div class="scoreboard" id="scoreboard">
         <div class="sb-team" id="sbTeam"></div>
         <div class="sb-score">
@@ -158,7 +138,6 @@
         </div>
       </div>
       
-      <!-- Current over -->
       <div class="sec">
         <div class="sec-hd">
           <span class="sec-ttl">Current Over</span>
@@ -168,7 +147,6 @@
         <div class="over-info" id="overInfo"></div>
       </div>
       
-      <!-- Batsmen -->
       <div class="sec bat-sec">
         <div class="bat-row" id="strRow">
           <div class="bat-ico act">⚡</div>
@@ -187,7 +165,6 @@
         </div>
       </div>
       
-      <!-- Score buttons -->
       <div class="sec">
         <div class="sec-hd"><span class="sec-ttl">Score</span></div>
         <div class="run-grid">
@@ -214,13 +191,11 @@
         </div>
       </div>
       
-      <!-- Bowling -->
       <div class="sec">
         <div class="sec-hd"><span class="sec-ttl">Bowling Figures</span></div>
         <div id="bowlFigs"></div>
       </div>
       
-      <!-- Scorecard -->
       <div class="sec">
         <button class="sc-toggle" onclick="toggleSC()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-fill" viewBox="0 0 16 16">
   <path fill-rule="evenodd" d="M10 1.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5zm-5 0A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5v1A1.5 1.5 0 0 1 9.5 4h-3A1.5 1.5 0 0 1 5 2.5zm-2 0h1v1A2.5 2.5 0 0 0 6.5 5h3A2.5 2.5 0 0 0 12 2.5v-1h1a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3.5a2 2 0 0 1 2-2" />
@@ -237,6 +212,19 @@
   </div><!-- #app -->
   
   <!-- MODALS -->
+
+  <!-- TOSS MODAL (new) -->
+  <div id="tossModal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl">🪙 Toss</div>
+      <div id="tossInfo"></div>
+      <div class="mact">
+        <button class="mbtn-c" onclick="closeModal('tossModal')">Back</button>
+        <button class="mbtn-ok" onclick="confirmToss()">Start Match</button>
+      </div>
+    </div>
+  </div>
+
   <div id="wkModal" class="modal-bg" style="display:none">
     <div class="modal">
       <div class="modal-ttl">🔴 Wicket!</div>
