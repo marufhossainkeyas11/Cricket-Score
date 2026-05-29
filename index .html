@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  
+  <!-- Primary Meta -->
+  <title>Cricket Score – Cricket Scoring Tool</title>
+  <meta name="description" content="A simple and fast cricket scoring tool for tracking live match scores." />
+  <meta name="author" content="Your Name" />
+  <meta name="theme-color" content="#242e42" />
+  
+  <!-- Favicon -->
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  
+  <!-- Open Graph (Facebook, WhatsApp, etc.) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Cricket Score – Cricket Scoring Tool" />
+  <meta property="og:description" content="A simple and fast cricket scoring tool for tracking live match scores." />
+  <meta property="og:image" content="og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://yoursite.com" />
+  <meta property="og:site_name" content="Cricket Score" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cricket Score – Cricket Scoring Tool" />
+  <meta name="twitter:description" content="A simple and fast cricket scoring tool for tracking live match scores." />
+  <meta name="twitter:image" content="og-image.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style .css" />
+</head>
+
+<body>
+  <div id="app">
+    
+    <!-- ═══ SETUP ═══ -->
+    <div id="setup-screen" class="screen active">
+      <div class="setup-glow"></div>
+      <div class="setup-wrap">
+        
+        <!-- Brand -->
+        <div class="brand">
+          <img src="/favicon.svg" alt="Logo" class="brand-svg">
+          <div class="brand-text">
+            <div class="brand-name"><span class="bc">CRICKET</span> <span class="bs">SCORE</span></div>
+            <div class="brand-tagline">— CRICKET SCORING TOOL —</div>
+          </div>
+        </div>
+        
+        <div class="card">
+          
+          <!-- STEP 1 -->
+          <div class="step">
+            <div class="step-hd">01 · MATCH SETUP</div>
+            <div class="row2">
+              <div class="fg"><label>Batting Team</label><input id="teamA" type="text" placeholder="Team A" maxlength="20" /></div>
+              <div class="vs">VS</div>
+              <div class="fg"><label>Bowling Team</label><input id="teamB" type="text" placeholder="Team B" maxlength="20" /></div>
+            </div>
+            <div class="row2 mt8">
+              <div class="fg"><label>Total Overs</label><input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" /></div>
+              <div class="fg"><label>Players per Side</label><input id="playerCount" type="number" value="11" min="2" max="11" oninput="onMatchChange()" /></div>
+            </div>
+          </div>
+          
+          <!-- STEP 2 : OVER LIMITS -->
+          <div class="step">
+            <div class="step-hd">02 · BOWLING OVER LIMITS</div>
+            <div class="limit-info" id="limitInfo"></div>
+            
+            <!-- Tier list -->
+            <div id="tierList"></div>
+            
+            <!-- Add tier button -->
+            <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">+ Add Next Limit Tier</button>
+            
+            <!-- Feasibility -->
+            <div class="feasibility" id="feasibility"></div>
+          </div>
+          
+          <!-- STEP 3 : PLAYERS -->
+          <div class="step">
+            <div class="step-hd">03 · BATTING TEAM PLAYERS</div>
+            <div class="pgrid" id="batGrid"></div>
+          </div>
+          <div class="step">
+            <div class="step-hd">04 · BOWLING TEAM PLAYERS</div>
+            <div class="pgrid" id="bowlGrid"></div>
+          </div>
+          
+          <button class="start-btn" onclick="startMatch()">🏏 Start Match</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ═══ SCORING ═══ -->
+    <div id="scoring-screen" class="screen">
+      <header class="hdr">
+        <div class="hdr-l">
+          <img src="/favicon.svg" alt="Logo" class="hdr-logo">
+          <div class="hdr-teams" id="hdrTeams"></div>
+        </div>
+        <div class="hdr-r">
+          <span class="hdr-fmt" id="hdrFmt"></span>
+          <button class="hbtn" id="inn2Btn" style="display:none" onclick="showInn2Modal()">2nd Inn</button>
+          <button class="hbtn red" onclick="doReset()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-counterclockwise" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z" />
+              <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466" />
+            </svg></button>
+        </div>
+      </header>
+      
+      <!-- Scoreboard -->
+      <div class="scoreboard" id="scoreboard">
+        <div class="sb-team" id="sbTeam"></div>
+        <div class="sb-score">
+          <span class="sb-runs" id="sbRuns">0</span><span class="sb-wk" id="sbWk">/0</span>
+        </div>
+        <div class="sb-meta">
+          <div class="smi">
+            <div class="sml">Overs</div>
+            <div class="smv" id="sbOv">0.0</div>
+          </div>
+          <div class="smi">
+            <div class="sml">RR</div>
+            <div class="smv" id="sbRR">0.00</div>
+          </div>
+          <div class="smi" id="tgtBlk" style="display:none">
+            <div class="sml">Target</div>
+            <div class="smv" id="sbTgt">—</div>
+          </div>
+          <div class="smi" id="rrrBlk" style="display:none">
+            <div class="sml">Need</div>
+            <div class="smv" id="sbNeed">—</div>
+          </div>
+        </div>
+        <div class="sb-prog">
+          <div class="sb-prog-lbl" id="innLbl">1st Innings</div>
+          <div class="sb-prog-bar">
+            <div class="sb-prog-fill" id="progFill"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Current over -->
+      <div class="sec">
+        <div class="sec-hd">
+          <span class="sec-ttl">Current Over</span>
+          <span class="bowler-badge" id="bowlerBadge">—</span>
+        </div>
+        <div class="balls-row" id="ballsRow"></div>
+        <div class="over-info" id="overInfo"></div>
+      </div>
+      
+      <!-- Batsmen -->
+      <div class="sec bat-sec">
+        <div class="bat-row" id="strRow">
+          <div class="bat-ico act">⚡</div>
+          <div class="bat-det">
+            <div class="bat-nm" id="strName">—</div>
+            <div class="bat-st"><span id="strR">0</span>(<span id="strB">0</span>) · <b class="c4">4s:<span id="str4">0</span></b> <b class="c6">6s:<span id="str6">0</span></b> · SR:<span id="strSR">0.0</span></div>
+          </div>
+        </div>
+        <div class="bat-div"></div>
+        <div class="bat-row" id="nsRow">
+          <div class="bat-ico">🏏</div>
+          <div class="bat-det">
+            <div class="bat-nm" id="nsName">—</div>
+            <div class="bat-st"><span id="nsR">0</span>(<span id="nsB">0</span>)</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Score buttons -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-ttl">Score</span></div>
+        <div class="run-grid">
+          <button class="rb dot" onclick="ball(0,null)">0<br><small>Dot</small></button>
+          <button class="rb" onclick="ball(1,null)">1</button>
+          <button class="rb" onclick="ball(2,null)">2</button>
+          <button class="rb" onclick="ball(3,null)">3</button>
+          <button class="rb four" onclick="ball(4,null)">4</button>
+          <button class="rb six" onclick="ball(6,null)">6</button>
+        </div>
+        <div class="ext-grid">
+          <button class="eb wd" onclick="ball(1,'wide')">Wide +1</button>
+          <button class="eb wd" onclick="ball(2,'wide')">Wide +2</button>
+          <button class="eb nb" onclick="ball(1,'noball')">No Ball</button>
+          <button class="eb nb" onclick="ball(2,'noball')">NB +2</button>
+          <button class="eb bye" onclick="ball(1,'bye')">Bye</button>
+          <button class="eb bye" onclick="ball(1,'legbye')">Leg Bye</button>
+        </div>
+        <div class="act-grid">
+          <button class="wk-btn" onclick="showWicketModal()">🔴 WICKET</button>
+          <button class="undo-btn" onclick="undoLast()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-90deg-left" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1.146 4.854a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H12.5A2.5 2.5 0 0 1 15 6.5v8a.5.5 0 0 1-1 0v-8A1.5 1.5 0 0 0 12.5 5H2.707l3.147 3.146a.5.5 0 1 1-.708.708z" />
+            </svg> Undo</button>
+        </div>
+      </div>
+      
+      <!-- Bowling -->
+      <div class="sec">
+        <div class="sec-hd"><span class="sec-ttl">Bowling Figures</span></div>
+        <div id="bowlFigs"></div>
+      </div>
+      
+      <!-- Scorecard -->
+      <div class="sec">
+        <button class="sc-toggle" onclick="toggleSC()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard-fill" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M10 1.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5zm-5 0A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5v1A1.5 1.5 0 0 1 9.5 4h-3A1.5 1.5 0 0 1 5 2.5zm-2 0h1v1A2.5 2.5 0 0 0 6.5 5h3A2.5 2.5 0 0 0 12 2.5v-1h1a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3.5a2 2 0 0 1 2-2" />
+</svg> SCORECARD</button>
+        <div id="scPanel" style="display:none">
+          <div class="sc-hd">Batting</div>
+          <div id="batSC"></div>
+          <div class="sc-hd mt">Bowling</div>
+          <div id="bowlSC"></div>
+        </div>
+      </div>
+    </div>
+    
+  </div><!-- #app -->
+  
+  <!-- MODALS -->
+  <div id="wkModal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl">🔴 Wicket!</div>
+      <div class="mf"><label>Batsman Out</label><select id="wkBat"></select></div>
+      <div class="mf"><label>Dismissal</label>
+        <div class="dis-grid">
+          <button class="db" onclick="pickDis(this,'Bowled')">Bowled</button>
+          <button class="db" onclick="pickDis(this,'Caught')">Caught</button>
+          <button class="db" onclick="pickDis(this,'LBW')">LBW</button>
+          <button class="db" onclick="pickDis(this,'Run Out')">Run Out</button>
+          <button class="db" onclick="pickDis(this,'Stumped')">Stumped</button>
+          <button class="db" onclick="pickDis(this,'Hit Wicket')">Hit Wicket</button>
+        </div>
+      </div>
+      <div class="mf" id="newBatFld"><label>New Batsman</label><select id="newBat"></select></div>
+      <div class="mact">
+        <button class="mbtn-c" onclick="closeModal('wkModal')">Cancel</button>
+        <button class="mbtn-ok" onclick="confirmWicket()">Confirm</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="bowlerModal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl" id="bowlerModalTitle">Select Bowler</div>
+      <div class="bowler-info" id="bowlerModalInfo"></div>
+      <div id="bowlerList"></div>
+      <div class="mact"><button class="mbtn-ok" onclick="confirmBowler()">Confirm</button></div>
+    </div>
+  </div>
+  
+  <div id="inn2Modal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl">Innings Break 🏏</div>
+      <div id="inn2Info"></div>
+      <div class="mact"><button class="mbtn-ok" onclick="startInn2()">Start 2nd Innings</button></div>
+    </div>
+  </div>
+  
+  <script src="app .js"></script>
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {})
+  </script>
+</body>
+
+</html>
