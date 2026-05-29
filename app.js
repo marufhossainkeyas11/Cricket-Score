@@ -137,8 +137,10 @@ function renderTiers() {
     inpMax.max = ov;
     inpMax.value = t.maxOv;
     inpMax.id = `tmx_${i}`;
-    inpMax.oninput = () => { tierRows[i].maxOv = +inpMax.value || 1;
-      checkFeasibility(); };
+    inpMax.oninput = () => {
+      tierRows[i].maxOv = +inpMax.value || 1;
+      checkFeasibility();
+    };
     fMax.appendChild(inpMax);
     fields.appendChild(fMax);
     
@@ -152,8 +154,10 @@ function renderTiers() {
     inpCnt.placeholder = t.isRest ? 'rest' : '';
     inpCnt.disabled = t.isRest;
     inpCnt.id = `tcnt_${i}`;
-    inpCnt.oninput = () => { tierRows[i].count = +inpCnt.value || 1;
-      checkFeasibility(); };
+    inpCnt.oninput = () => {
+      tierRows[i].count = +inpCnt.value || 1;
+      checkFeasibility();
+    };
     fCnt.appendChild(inpCnt);
     fields.appendChild(fCnt);
     
@@ -174,9 +178,11 @@ function renderTiers() {
     
     if (tierRows.length > 1) {
       const del = el('button', 'tier-del', '✕');
-      del.onclick = () => { tierRows.splice(i, 1);
+      del.onclick = () => {
+        tierRows.splice(i, 1);
         renderTiers();
-        checkFeasibility(); };
+        checkFeasibility();
+      };
       row.appendChild(del);
     }
     
@@ -275,8 +281,10 @@ function startMatch() {
   tierRows.forEach(t => {
     const lim = +t.maxOv || 0;
     if (t.isRest) maxPoss += Math.max(pl - covered, 0) * lim;
-    else { covered += +t.count || 0;
-      maxPoss += (+t.count || 0) * lim; }
+    else {
+      covered += +t.count || 0;
+      maxPoss += (+t.count || 0) * lim;
+    }
   });
   if (maxPoss < ov) { alert(`Over limits too low! Max possible: ${maxPoss} ov, need ${ov}.`); return; }
   
@@ -551,6 +559,228 @@ function undoLast() {
   saveState();
 }
 
+function resultUndo() {
+  if (!G.match || !G.match.history.length) return;
+  
+  G.match.resultLocked = false;
+  G.match.done = false;
+  
+  function downloadSummary() {
+    const m = G.match,
+      s = G.setup,
+      i1 = G.inn1FullData;
+    const { winnerMsg } = G.resultData;
+    const inn1Team = i1 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
+    const inn2Team = i1 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : s.teamA;
+    
+    const W = 800,
+      PAD = 32;
+    let rows = [];
+    
+    // ── ডেটা কালেক্ট ──
+    function collectBat(batArr, label) {
+      rows.push({ type: 'inn', text: label });
+      rows.push({ type: 'hd', cols: ['Batter', '', 'R', 'B', '4s', '6s', 'SR'] });
+      batArr.filter(b => !b.notYet || b.out).forEach(b => {
+        const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '-';
+        rows.push({ type: 'bat', cols: [b.name, b.out ? b.howOut : 'not out', b.runs, b.balls, b.fours, b.sixes, sr] });
+      });
+    }
+    
+    function collectBowl(bowlMap, bowlOrder) {
+      rows.push({ type: 'hd2', cols: ['Bowler', 'Overs', 'R', 'W', 'Wd', 'NB', 'Eco'] });
+      bowlOrder.forEach(name => {
+        const b = bowlMap[name];
+        if (!b) return;
+        const ov = Math.floor(b.balls / 6),
+          rb = b.balls % 6;
+        const eco = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '-';
+        rows.push({ type: 'bowl', cols: [name, `${ov}.${rb}`, b.runs, b.wickets, b.wides || 0, b.noballs || 0, eco] });
+      });
+    }
+    
+    if (i1) {
+      const sc1 = `${i1.runs}/${i1.wickets} (${Math.floor(i1.balls/6)}.${i1.balls%6} ov)`;
+      collectBat(i1.bat, `${inn1Team}  ${sc1}`);
+      collectBowl(i1.bowlMap, i1.bowlOrder);
+    }
+    const sc2 = `${m.runs}/${m.wickets} (${Math.floor(m.balls/6)}.${m.balls%6} ov)`;
+    collectBat(m.bat, `${inn2Team}  ${sc2}`);
+    collectBowl(m.bowlMap, m.bowlOrder);
+    
+    // ── রো হাইট হিসাব ──
+    const ROW_H = 26,
+      INN_H = 36,
+      HD_H = 22;
+    let totalH = 120; // hero অংশ
+    rows.forEach(r => {
+      if (r.type === 'inn') totalH += INN_H + 8;
+      else if (r.type === 'hd' || r.type === 'hd2') totalH += HD_H;
+      else totalH += ROW_H;
+    });
+    totalH += 40; // footer
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = W * 2;
+    canvas.height = (totalH + 80) * 2; // 2x for retina
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    const H = totalH + 80;
+    
+    // ── Background ──
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0d1117');
+    bg.addColorStop(1, '#161b22');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    
+    // subtle glow top-left
+    const glow = ctx.createRadialGradient(100, 60, 0, 100, 60, 280);
+    glow.addColorStop(0, 'rgba(21,101,192,0.18)');
+    glow.addColorStop(1, 'rgba(21,101,192,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+    
+    // ── Hero ──
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f0b429';
+    ctx.font = 'bold 32px Inter, sans-serif';
+    ctx.fillText('🏆', W / 2, 46);
+    
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 22px Inter, sans-serif';
+    ctx.fillText(winnerMsg, W / 2, 78);
+    
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '13px Inter, sans-serif';
+    ctx.fillText(`${s.teamA} vs ${s.teamB}  ·  ${s.overs} Overs`, W / 2, 100);
+    
+    // divider
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, 114);
+    ctx.lineTo(W - PAD, 114);
+    ctx.stroke();
+    
+    // ── Table rows ──
+    let y = 124;
+    ctx.textAlign = 'left';
+    
+    const COLS_W = [220, 150, 45, 45, 35, 35, 55]; // col widths
+    const COLS_X = [PAD];
+    COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
+    
+    rows.forEach(r => {
+      if (r.type === 'inn') {
+        y += 8;
+        // pill background
+        ctx.fillStyle = 'rgba(21,101,192,0.12)';
+        roundRect(ctx, PAD - 8, y - 18, W - PAD * 2 + 16, INN_H, 8);
+        ctx.fill();
+        ctx.fillStyle = '#60a5fa';
+        ctx.font = 'bold 14px Inter, sans-serif';
+        ctx.fillText(r.text, PAD, y + 4);
+        y += INN_H + 4;
+      } else if (r.type === 'hd' || r.type === 'hd2') {
+        ctx.fillStyle = '#4a5568';
+        ctx.font = '600 11px Inter, sans-serif';
+        r.cols.forEach((c, i) => {
+          ctx.textAlign = i > 1 ? 'right' : 'left';
+          const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+          ctx.fillText(String(c).toUpperCase(), cx, y + 14);
+        });
+        ctx.textAlign = 'left';
+        y += HD_H;
+        // thin divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.beginPath();
+        ctx.moveTo(PAD, y);
+        ctx.lineTo(W - PAD, y);
+        ctx.stroke();
+      } else {
+        // bat or bowl row
+        const isEven = false;
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H);
+        
+        r.cols.forEach((c, i) => {
+          let color = '#e6edf3';
+          if (i === 1) color = '#4a5568'; // dismissal / overs
+          if (i === 2) color = '#22c55e'; // runs
+          if (i === 3 && r.type === 'bowl') color = '#f87171'; // wickets
+          if (i === 4 && r.type === 'bat') color = '#60a5fa'; // 4s
+          if (i === 5 && r.type === 'bat') color = '#f0b429'; // 6s
+          
+          ctx.fillStyle = color;
+          const isNum = i > 1;
+          ctx.textAlign = isNum ? 'right' : 'left';
+          ctx.font = i === 0 ? '500 13px Inter, sans-serif' : '13px Inter, sans-serif';
+          const cx = isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+          ctx.fillText(String(c), cx, y + 18);
+        });
+        ctx.textAlign = 'left';
+        
+        // row divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath();
+        ctx.moveTo(PAD, y + ROW_H);
+        ctx.lineTo(W - PAD, y + ROW_H);
+        ctx.stroke();
+        y += ROW_H;
+      }
+    });
+    
+    // ── Footer ──
+    y += 16;
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(0, y, W, 1);
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Cricket Score · Match Summary', W / 2, y + 20);
+    
+    // ── Download ──
+    const link = document.createElement('a');
+    link.download = `${s.teamA}_vs_${s.teamB}_summary.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+  
+  // helper: rounded rect (canvas এ নেই পুরনো browser এ)
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+  const snap = JSON.parse(G.match.history.pop());
+  const hist = G.match.history;
+  Object.assign(G.match, snap);
+  G.match.doneOvers = snap.doneOvers || [];
+  G.match.history = hist;
+  G.match.done = false;
+  
+  const rs = document.getElementById('result-screen');
+  if (rs) rs.classList.remove('active');
+  
+  if (G.match.innings === 1) {
+    $('inn2Btn').style.display = 'none';
+  }
+  
+  showScreen('scoring');
+  renderHeader();
+  renderAll();
+  saveState();
+}
+
 // ═══════════════════════════════════════════════
 //  WICKET MODAL
 // ═══════════════════════════════════════════════
@@ -677,6 +907,16 @@ function startInn2() {
   const s = G.setup;
   [s.teamA, s.teamB] = [s.teamB, s.teamA];
   // [s.batNames, s.bowlNames] = [s.bowlNames, s.batNames];
+  // ১ম ইনিংসের সম্পূর্ণ স্ন্যাপশট সেভ
+  G.inn1FullData = JSON.parse(JSON.stringify({
+    runs: G.match.runs,
+    wickets: G.match.wickets,
+    balls: G.match.balls,
+    extras: G.match.extras,
+    bat: G.match.bat,
+    bowlMap: G.match.bowlMap,
+    bowlOrder: G.match.bowlOrder,
+  }));
   
   initMatch(2);
   $('inn2Btn').style.display = 'none';
@@ -691,26 +931,191 @@ function startInn2() {
 function showResult() {
   const m = G.match,
     s = G.setup;
-  let msg = '';
+  
+  m.resultLocked = true;
+  
+  let winnerMsg = '';
+  let winnerTeam = '';
   if (m.innings === 2 && G.inn1) {
-    if (m.runs > G.inn1.runs) msg = `🏆 ${s.teamA} wins by ${(s.players-1)-m.wickets} wickets!`;
-    else if (m.runs === G.inn1.runs) msg = `🤝 Match Tied!`;
-    else msg = `🏆 ${s.teamB} wins by ${G.inn1.runs-m.runs} runs!`;
+    if (m.runs > G.inn1.runs) {
+      const wkLeft = (s.players - 1) - m.wickets;
+      winnerMsg = `${s.teamA} wins by ${wkLeft} wicket${wkLeft !== 1 ? 's' : ''}!`;
+      winnerTeam = s.teamA;
+    } else if (m.runs === G.inn1.runs) {
+      winnerMsg = `Match Tied!`;
+      winnerTeam = 'Tie';
+    } else {
+      const margin = G.inn1.runs - m.runs;
+      winnerMsg = `${s.teamB} wins by ${margin} run${margin !== 1 ? 's' : ''}!`;
+      winnerTeam = s.teamB;
+    }
   } else {
-    msg = `1st Innings complete: ${s.teamA} — ${m.runs}/${m.wickets}`;
+    winnerMsg = `1st Innings: ${s.teamA} — ${m.runs}/${m.wickets}`;
+    winnerTeam = '';
   }
-  clearState();
-  setTimeout(() => alert(msg), 300);
+  
+  G.resultData = { winnerMsg, winnerTeam };
+  saveState();
+  
+  showResultScreen();
+}
+
+function showResultScreen() {
+  const m = G.match,
+    s = G.setup,
+    i1 = G.inn1;
+  const { winnerMsg, winnerTeam } = G.resultData;
+  
+  let rs = document.getElementById('result-screen');
+  if (!rs) {
+    rs = document.createElement('div');
+    rs.id = 'result-screen';
+    rs.className = 'screen';
+    document.getElementById('app').appendChild(rs);
+  }
+  
+  const inn1Team = m.innings === 2 ?
+    (s.batFirst === s.team1 ? s.team1 : s.team2) :
+    s.teamA;
+  const inn2Team = m.innings === 2 ?
+    (s.batFirst === s.team1 ? s.team2 : s.team1) :
+    null;
+  
+  function buildBatRows(batArr) {
+    return batArr.filter(b => !b.notYet || b.out).map(b => {
+      const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0';
+      return `
+        <div class="rs-row">
+          <span class="rs-nm">${b.name}</span>
+          <span class="rs-hw">${b.out ? b.howOut : 'not out'}</span>
+          <span class="rs-r">${b.runs}</span>
+          <span class="rs-b">(${b.balls})</span>
+          <span class="rs-46"><span style="color:#60a5fa">${b.fours}</span>/<span style="color:#f0b429">${b.sixes}</span></span>
+          <span class="rs-sr">${sr}</span>
+        </div>`;
+    }).join('');
+  }
+  
+  function buildBowlRows(bowlMap, bowlOrder) {
+    return bowlOrder.map(name => {
+      const b = bowlMap[name];
+      if (!b) return '';
+      const ov = Math.floor(b.balls / 6),
+        rb = b.balls % 6;
+      const econ = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '0.00';
+      return `
+        <div class="rs-row">
+          <span class="rs-nm">${name}</span>
+          <span class="rs-hw">${ov}.${rb} ov</span>
+          <span class="rs-r">${b.runs}</span>
+          <span class="rs-b">${b.wickets}w</span>
+          <span class="rs-46"><span style="color:#f87171">${b.wides||0}wd</span></span>
+          <span class="rs-sr">${econ} eco</span>
+        </div>`;
+    }).join('');
+  }
+  
+  const d1 = G.inn1FullData || null;
+  const d2 = m;
+  
+  const ov1 = d1 ? `${Math.floor(d1.balls/6)}.${d1.balls%6}` : '—';
+  const ov2 = `${Math.floor(d2.balls/6)}.${d2.balls%6}`;
+  
+  let inn1HTML = '',
+    inn2HTML = '';
+  
+  if (d1) {
+    inn1HTML = `
+      <div class="rs-inn-hd">
+        <span>${inn1Team}</span>
+        <span class="rs-score">${d1.runs}/${d1.wickets} <small>(${ov1} ov)</small></span>
+      </div>
+      <div class="rs-tbl-hd">
+        <span class="rs-nm">Batter</span><span class="rs-hw">Dismissal</span>
+        <span class="rs-r">R</span><span class="rs-b">B</span>
+        <span class="rs-46">4/6</span><span class="rs-sr">SR</span>
+      </div>
+      ${buildBatRows(d1.bat)}
+      <div class="rs-extras">Extras: ${d1.extras.wide}wd ${d1.extras.noball}nb ${d1.extras.bye}b ${d1.extras.legbye}lb</div>
+      <div class="rs-tbl-hd" style="margin-top:10px">
+        <span class="rs-nm">Bowler</span><span class="rs-hw">Overs</span>
+        <span class="rs-r">R</span><span class="rs-b">W</span>
+        <span class="rs-46">Wd</span><span class="rs-sr">Eco</span>
+      </div>
+      ${buildBowlRows(d1.bowlMap, d1.bowlOrder)}`;
+  }
+  
+  inn2HTML = `
+    <div class="rs-inn-hd" style="margin-top:${d1 ? '20px':'0'}">
+      <span>${inn2Team || s.teamA}</span>
+      <span class="rs-score">${d2.runs}/${d2.wickets} <small>(${ov2} ov)</small></span>
+    </div>
+    <div class="rs-tbl-hd">
+      <span class="rs-nm">Batter</span><span class="rs-hw">Dismissal</span>
+      <span class="rs-r">R</span><span class="rs-b">B</span>
+      <span class="rs-46">4/6</span><span class="rs-sr">SR</span>
+    </div>
+    ${buildBatRows(d2.bat)}
+    <div class="rs-extras">Extras: ${d2.extras.wide}wd ${d2.extras.noball}nb ${d2.extras.bye}b ${d2.extras.legbye}lb</div>
+    <div class="rs-tbl-hd" style="margin-top:10px">
+      <span class="rs-nm">Bowler</span><span class="rs-hw">Overs</span>
+      <span class="rs-r">R</span><span class="rs-b">W</span>
+      <span class="rs-46">Wd</span><span class="rs-sr">Eco</span>
+    </div>
+    ${buildBowlRows(d2.bowlMap, d2.bowlOrder)}`;
+  
+  rs.innerHTML = `
+    <div class="rs-wrap" id="rs-capture">
+      <div class="rs-glow"></div>
+
+      <div class="rs-hero">
+        <div class="rs-trophy">${winnerTeam === 'Tie' ? '🤝' : '🏆'}</div>
+        <div class="rs-winner">${winnerMsg}</div>
+        <div class="rs-sub">${s.teamA} vs ${s.teamB} · ${s.overs} Overs</div>
+      </div>
+
+      ${d1 ? `<div class="rs-score-bar">
+        <div class="rs-sb-item">
+          <span class="rs-sb-team">${inn1Team}</span>
+          <span class="rs-sb-score">${d1.runs}/${d1.wickets}</span>
+        </div>
+        <div class="rs-sb-vs">VS</div>
+        <div class="rs-sb-item">
+          <span class="rs-sb-team">${inn2Team}</span>
+          <span class="rs-sb-score">${d2.runs}/${d2.wickets}</span>
+        </div>
+      </div>` : ''}
+
+      <div class="rs-section">
+        <div class="rs-sec-ttl">Match Summary</div>
+        ${inn1HTML}
+        ${inn2HTML}
+      </div>
+    </div>
+
+    <div class="rs-actions">
+      <button class="rs-btn rs-btn-cancel" onclick="resultUndo()">Undo</button>
+      <button class="rs-btn rs-btn-dl" onclick="downloadSummary()">Download</button>
+      <button class="rs-btn rs-btn-new" onclick="doReset()">Reset</button>
+    </div>
+  `;
+  
+  document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
+  rs.classList.add('active');
+  G.screen = 'result';
+  saveState();
 }
 
 // ═══════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════
 
-function renderAll() { renderScore();
+function renderAll() {
+  renderScore();
   renderBalls();
   renderBatsmen();
-  renderBowlFigs(); }
+  renderBowlFigs();
+}
 
 function renderHeader() {
   const s = G.setup;
@@ -882,6 +1287,7 @@ function doReset() {
   $('innLbl').textContent = '1st Innings';
   showScreen('setup');
   initSetup();
+  location.reload();
 }
 
 // ═══════════════════════════════════════════════
@@ -896,6 +1302,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (saved) {
     G = saved;
     tierRows = G.setup.tiers ? [...G.setup.tiers] : [];
+    
+    if (G.screen === 'result' && G.match && G.resultData) {
+      showResultScreen();
+      return;
+    }
+    
     if (G.screen === 'scoring' && G.match) {
       showScreen('scoring');
       renderHeader();
@@ -913,3 +1325,231 @@ document.addEventListener('DOMContentLoaded', () => {
   
   initSetup();
 });
+
+function downloadSummary() {
+  const m = G.match,
+    s = G.setup,
+    i1 = G.inn1FullData;
+  const { winnerMsg } = G.resultData;
+  const inn1Team = i1 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
+  const inn2Team = i1 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : s.teamA;
+  
+  const W = 800,
+    PAD = 32;
+  let rows = [];
+  
+  // ── ডেটা কালেক্ট ──
+  function collectBat(batArr, label) {
+    rows.push({ type: 'inn', text: label });
+    rows.push({ type: 'hd', cols: ['Batter', '', 'R', 'B', '4s', '6s', 'SR'] });
+    batArr.filter(b => !b.notYet || b.out).forEach(b => {
+      const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '-';
+      rows.push({ type: 'bat', cols: [b.name, b.out ? b.howOut : 'not out', b.runs, b.balls, b.fours, b.sixes, sr] });
+    });
+  }
+  
+  function collectBowl(bowlMap, bowlOrder) {
+    rows.push({ type: 'gap' });
+    rows.push({ type: 'bowl-hd', cols: ['Bowler', 'Overs', 'R', 'W', 'Wd', 'NB', 'Eco'] });
+    bowlOrder.forEach(name => {
+      const b = bowlMap[name];
+      if (!b) return;
+      const ov = Math.floor(b.balls / 6),
+        rb = b.balls % 6;
+      const eco = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '-';
+      rows.push({ type: 'bowl', cols: [name, `${ov}.${rb}`, b.runs, b.wickets, b.wides || 0, b.noballs || 0, eco] });
+    });
+    rows.push({ type: 'gap' });
+  }
+  
+  if (i1) {
+    const sc1 = `${i1.runs}/${i1.wickets} (${Math.floor(i1.balls/6)}.${i1.balls%6} ov)`;
+    collectBat(i1.bat, `${inn1Team}  ${sc1}`);
+    collectBowl(i1.bowlMap, i1.bowlOrder);
+  }
+  const sc2 = `${m.runs}/${m.wickets} (${Math.floor(m.balls/6)}.${m.balls%6} ov)`;
+  collectBat(m.bat, `${inn2Team}  ${sc2}`);
+  collectBowl(m.bowlMap, m.bowlOrder);
+  
+  // ── রো হাইট হিসাব ──
+  const ROW_H = 26,
+    INN_H = 36,
+    HD_H = 22;
+  let totalH = 120; // hero অংশ
+  // forEach এ
+  rows.forEach(r => {
+    if (r.type === 'inn') totalH += INN_H + 8;
+    else if (r.type === 'hd' || r.type === 'bowl-hd') totalH += HD_H + 4;
+    else if (r.type === 'gap') totalH += 14;
+    else totalH += ROW_H;
+  });
+  totalH += 40; // footer
+  
+  const canvas = document.createElement('canvas');
+  canvas.width = W * 2;
+  canvas.height = (totalH + 80) * 2; // 2x for retina
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+  const H = totalH + 80;
+  
+  // ── Background ──
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1117');
+  bg.addColorStop(1, '#161b22');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  
+  // subtle glow top-left
+  const glow = ctx.createRadialGradient(100, 60, 0, 100, 60, 280);
+  glow.addColorStop(0, 'rgba(21,101,192,0.18)');
+  glow.addColorStop(1, 'rgba(21,101,192,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  
+  // ── Hero ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#f0b429';
+  ctx.font = 'bold 32px Inter, sans-serif';
+  ctx.fillText('🏆', W / 2, 46);
+  
+  ctx.fillStyle = '#e6edf3';
+  ctx.font = 'bold 22px Inter, sans-serif';
+  ctx.fillText(winnerMsg, W / 2, 78);
+  
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.fillText(`${s.teamA} vs ${s.teamB}  ·  ${s.overs} Overs`, W / 2, 100);
+  
+  // divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, 114);
+  ctx.lineTo(W - PAD, 114);
+  ctx.stroke();
+  
+  // ── Table rows ──
+  let y = 124;
+  ctx.textAlign = 'left';
+  
+  const COLS_W = [220, 150, 45, 45, 35, 35, 55]; // col widths
+  const COLS_X = [PAD];
+  COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
+  
+  rows.forEach(r => {
+    if (r.type === 'inn') {
+      y += 8;
+      // pill background
+      ctx.fillStyle = 'rgba(21,101,192,0.12)';
+      roundRect(ctx, PAD - 8, y - 18, W - PAD * 2 + 16, INN_H, 8);
+      ctx.fill();
+      ctx.fillStyle = '#60a5fa';
+      ctx.font = 'bold 14px Inter, sans-serif';
+      ctx.fillText(r.text, PAD, y + 4);
+      y += INN_H + 4;
+    } else if (r.type === 'hd' || r.type === 'hd2') {
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '600 11px Inter, sans-serif';
+      r.cols.forEach((c, i) => {
+        ctx.textAlign = i > 1 ? 'right' : 'left';
+        const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+        ctx.fillText(String(c).toUpperCase(), cx, y + 14);
+      });
+      ctx.textAlign = 'left';
+      y += HD_H;
+      // thin divider
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      ctx.moveTo(PAD, y);
+      ctx.lineTo(W - PAD, y);
+      ctx.stroke();
+    } else if (r.type === 'gap') {
+      // optional: একটা faint divider লাইন
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(PAD, y + 7);
+      ctx.lineTo(W - PAD, y + 7);
+      ctx.stroke();
+      y += 14;
+      
+    } else if (r.type === 'bowl-hd') {
+      // batting hd এর মতোই, আলাদা color দিতে পারো
+      ctx.fillStyle = '#4a5568';
+      ctx.font = '600 11px Inter, sans-serif';
+      r.cols.forEach((c, i) => {
+        ctx.textAlign = i > 1 ? 'right' : 'left';
+        const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+        ctx.fillText(String(c).toUpperCase(), cx, y + 14);
+      });
+      ctx.textAlign = 'left';
+      // underline
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath();
+      ctx.moveTo(PAD, y + HD_H + 2);
+      ctx.lineTo(W - PAD, y + HD_H + 2);
+      ctx.stroke();
+      y += HD_H + 4;
+    } else {
+      // bat or bowl row
+      const isEven = false;
+      ctx.fillStyle = 'rgba(255,255,255,0.02)';
+      ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H);
+      
+      r.cols.forEach((c, i) => {
+        let color = '#e6edf3';
+        if (i === 1) color = '#4a5568'; // dismissal / overs
+        if (i === 2) color = '#22c55e'; // runs
+        if (i === 3 && r.type === 'bowl') color = '#f87171'; // wickets
+        if (i === 4 && r.type === 'bat') color = '#60a5fa'; // 4s
+        if (i === 5 && r.type === 'bat') color = '#f0b429'; // 6s
+        
+        ctx.fillStyle = color;
+        const isNum = i > 1;
+        ctx.textAlign = isNum ? 'right' : 'left';
+        ctx.font = i === 0 ? '500 13px Inter, sans-serif' : '13px Inter, sans-serif';
+        const cx = isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+        ctx.fillText(String(c), cx, y + 18);
+      });
+      ctx.textAlign = 'left';
+      
+      // row divider
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.beginPath();
+      ctx.moveTo(PAD, y + ROW_H);
+      ctx.lineTo(W - PAD, y + ROW_H);
+      ctx.stroke();
+      y += ROW_H;
+    }
+  });
+  
+  // ── Footer ──
+  y += 16;
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, y, W, 1);
+  ctx.fillStyle = '#4a5568';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cricket Score · Match Summary', W / 2, y + 20);
+  
+  // ── Download ──
+  const link = document.createElement('a');
+  link.download = `${s.teamA}_vs_${s.teamB}_summary.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// helper: rounded rect (canvas এ নেই পুরনো browser এ)
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
