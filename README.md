@@ -25,7 +25,7 @@ Real-time Cricket Score Counter — Live match scoring app for GitHub Pages.
    - `icon-192.png` (add your own 192×192 cricket icon)
    - `icon-512.png` (add your own 512×512 cricket icon)
 3. Go to **Settings → Pages → Branch: main / root**
-4. Your app will be live at `https://yourusername.github.io/cricket-scorer/`
+4. Your app will be live at `https://marufhossainkeyas11.github.io/Cricket-Score/`
 
 ## Install as Chrome App
 - Open the site in Chrome
