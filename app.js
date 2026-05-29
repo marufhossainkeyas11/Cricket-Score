@@ -894,24 +894,20 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const saved = loadState();
   if (saved) {
-    if (confirm('Resume previous match?')) {
-      G = saved;
-      tierRows = G.setup.tiers ? [...G.setup.tiers] : [];
-      if (G.screen === 'scoring' && G.match) {
-        showScreen('scoring');
-        renderHeader();
-        renderAll();
-        if (G.match.innings === 2 && G.inn1) {
-          $('tgtBlk').style.display = 'flex';
-          $('rrrBlk').style.display = 'flex';
-          $('sbTgt').textContent = G.inn1.runs + 1;
-          $('innLbl').textContent = '2nd Innings';
-        }
-        if (G.match.needBowler && !G.match.done) openBowlerModal();
-        return;
+    G = saved;
+    tierRows = G.setup.tiers ? [...G.setup.tiers] : [];
+    if (G.screen === 'scoring' && G.match) {
+      showScreen('scoring');
+      renderHeader();
+      renderAll();
+      if (G.match.innings === 2 && G.inn1) {
+        $('tgtBlk').style.display = 'flex';
+        $('rrrBlk').style.display = 'flex';
+        $('sbTgt').textContent = G.inn1.runs + 1;
+        $('innLbl').textContent = '2nd Innings';
       }
-    } else {
-      clearState();
+      if (G.match.needBowler && !G.match.done) openBowlerModal();
+      return;
     }
   }
   
