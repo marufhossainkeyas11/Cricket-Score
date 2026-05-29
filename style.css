@@ -150,7 +150,11 @@ button {
 }
 
 .mt8 {
-  margin-top: 8px
+  margin-top: 8px;
+  
+  input{
+    text-align: center;
+  }
 }
 
 .vs {
