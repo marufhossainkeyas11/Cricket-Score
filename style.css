@@ -89,29 +89,63 @@ button {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  text-align: center;
+  align-items: center;
 }
 
 .brand-name {
-  font-family: var(--d);
-  font-size: 34px;
-  letter-spacing: 2px;
-  line-height: 1
+  font-size: 28px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.bc, .bs {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .bc {
-  color: var(--blue)
+  color: var(--blue);
 }
 
 .bs {
-  color: var(--red)
+  color: var(--red);
+}
+
+.brand-tagline-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.brand-tagline-wrapper::before {
+  background: var(--blue);
+  width: 20px;
+  height: 1.5px;
+  content: '';
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand-tagline-wrapper::after {
+  background: var(--red);
+  width: 20px;
+  height: 1.5px;
+  content: '';
+  display: block;
+  flex-shrink: 0;
 }
 
 .brand-tagline {
-  font-size: 9px;
-  letter-spacing: 3px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3.5px;
   color: var(--t2);
-  font-weight: 600
+  white-space: nowrap;
 }
 
 /* Card */
