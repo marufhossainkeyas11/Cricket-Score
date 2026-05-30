@@ -266,6 +266,33 @@
       <div class="mact"><button class="mbtn-ok" onclick="startInn2()">Start 2nd Innings</button></div>
     </div>
   </div>
+
+    <div id="resetModal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl"> Reset
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" style="transform: translateY(4px)" viewBox="0 -960 960 960">
+          <path d="M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z" />
+        </svg>
+      </div>
+      <p style="color:var(--t2);font-size:13px;margin-bottom:16px">What would you like to do?</p>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:4px">
+        <button class="reset-opt" onclick="doNewMatch()">
+          <div class="reset-opt-title">🏏 New Match</div>
+          <div class="reset-opt-sub">Clear everything, go back to setup</div>
+        </button>
+        <button class="reset-opt" onclick="doRematch()">
+          <div class="reset-opt-title">🔁 Rematch</div>
+          <div class="reset-opt-sub">Keep same format & teams, start fresh match</div>
+        </button>
+      </div>
+      
+      <div class="mact">
+        <button class="mbtn-c" onclick="closeModal('resetModal')">Back</button>
+      </div>
+    </div>
+    </div>
+  
   <div class="toast" id="toast"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="app.js"></script>
