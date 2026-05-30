@@ -1125,10 +1125,19 @@ function flash(type) {
 
 // ── RESET ──
 function doReset() {
-  if (!confirm('Reset match? All data will be cleared.')) return;
+  openModal('resetModal');
+}
+
+function doNewMatch() {
+  closeModal('resetModal');
   clearState();
   tierRows = [];
-  G = { screen: 'setup', setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '' }, match: null, inn1: null };
+  G = {
+    screen: 'setup',
+    setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '' },
+    match: null,
+    inn1: null
+  };
   $('inn2Btn').style.display = 'none';
   $('tgtBlk').style.display = 'none';
   $('rrrBlk').style.display = 'none';
@@ -1138,6 +1147,33 @@ function doReset() {
   location.reload();
 }
 
+function doRematch() {
+  closeModal('resetModal');
+  const savedSetup = {
+    team1: G.setup.team1,
+    team2: G.setup.team2,
+    overs: G.setup.overs,
+    players: G.setup.players,
+    team1Names: [...(G.setup.team1Names || [])],
+    team2Names: [...(G.setup.team2Names || [])],
+    tiers: G.setup.tiers ? G.setup.tiers.map(t => ({ ...t })) : [],
+    batFirst: ''
+  };
+  tierRows = savedSetup.tiers.length ? savedSetup.tiers : tierRows;
+  G = {
+    screen: 'setup',
+    setup: savedSetup,
+    match: null,
+    inn1: null
+  };
+  $('inn2Btn').style.display = 'none';
+  $('tgtBlk').style.display = 'none';
+  $('rrrBlk').style.display = 'none';
+  $('innLbl').textContent = '1st Innings';
+  showScreen('setup');
+  initSetup();
+  saveState();
+}
 // ═══════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════
