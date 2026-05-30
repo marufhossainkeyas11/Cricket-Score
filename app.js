@@ -321,7 +321,11 @@ function pickToss(teamName) {
 }
 
 function confirmToss() {
-  if (!G.setup.batFirst) { alert('Please select who bats first'); return; }
+  if (!G.setup.batFirst) {
+    shakeModal('tossModal');
+    showToast('Please select who bats first');
+    return;
+  }
   closeModal('tossModal');
   
   const s = G.setup;
@@ -506,6 +510,24 @@ function checkInningsDone() {
   }
 }
 
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function shakeModal(modalId) {
+  const m = $(modalId).querySelector('.modal');
+  if (!m) return;
+  m.classList.remove('shake');
+  void m.offsetWidth; 
+  m.classList.add('shake');
+  m.addEventListener('animationend', () => m.classList.remove('shake'), { once: true });
+  if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+}
+
 // ═══════════════════════════════════════════════
 //  UNDO — FIX 2: Close bowler modal if open, restore doneOvers properly
 // ═══════════════════════════════════════════════
@@ -623,7 +645,11 @@ function pickDis(btn, type) {
 }
 
 function confirmWicket() {
-  if (!pickedDis) { alert('Select dismissal type'); return; }
+  if (!pickedDis) {
+    shakeModal('wkModal');
+    showToast('Select dismissal type');
+    return;
+  }
   const outIdx = +$('wkBat').value;
   const nsel = $('newBat');
   const newBatIdx = nsel.options.length > 0 ? +nsel.value : null;
@@ -680,8 +706,11 @@ function openBowlerModal() {
 }
 
 function confirmBowler() {
-  if (!pickedBowler) { alert('Select a bowler'); return; }
-  const m = G.match;
+  if (!pickedBowler) {
+    shakeModal('bowlerModal');
+    showToast('Select a bowler');
+    return;
+  }const m = G.match;
   if (!m.bowlMap[pickedBowler]) {
     const rank = m.bowlOrder.length;
     const maxOv = maxOvForRank(rank);
