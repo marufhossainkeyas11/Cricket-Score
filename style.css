@@ -1713,3 +1713,70 @@ button {
   flex: 0 0 40px;
   text-align: right;
 }
+
+/* ── RESULT SCREEN BRANDING ── */
+.rs-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 0 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.rs-brand-logo {
+  width: 54px;
+  height: 54px;
+}
+
+.rs-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.rs-brand-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.rs-brand-tagline-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rs-brand-tagline-wrapper::before {
+  background: var(--blue);
+  width: 16px;
+  height: 1.5px;
+  content: '';
+  display: block;
+  flex-shrink: 0;
+}
+
+.rs-brand-tagline-wrapper::after {
+  background: var(--red);
+  width: 16px;
+  height: 1.5px;
+  content: '';
+  display: block;
+  flex-shrink: 0;
+}
+
+.rs-brand-tagline {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--t2);
+  white-space: nowrap;
+}
