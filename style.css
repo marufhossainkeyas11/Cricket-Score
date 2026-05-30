@@ -1822,3 +1822,34 @@ button {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+.reset-opt {
+  width: 100%;
+  background: var(--sf2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  padding: 13px 15px;
+  text-align: left;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.reset-opt:hover {
+  border-color: var(--blue2);
+}
+
+.reset-opt.danger:hover {
+  border-color: var(--red2);
+}
+
+.reset-opt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.reset-opt-sub {
+  font-size: 11px;
+  color: var(--t2);
+}
