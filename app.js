@@ -1369,7 +1369,7 @@ async function downloadSummary() {
         colorLight: '#8b949e',
         correctLevel: QRCode.CorrectLevel.M
       });
-      setTimeout(resolve, 600); 
+      setTimeout(resolve, 200); 
     } catch (e) {
       console.error('QR Error:', e);
       resolve();
