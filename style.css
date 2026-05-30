@@ -1532,13 +1532,18 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(21, 101, 192, .1);
+  background: rgba(229, 57, 53, .1);
   border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 6px;
   font-size: 13px;
   font-weight: 600;
+  color: #f87171;
+}
+
+.rs-inn-hd:nth-child(2) {
   color: #60a5fa;
+  background: rgba(21, 101, 192, .1);
 }
 
 .rs-inn-hd small {
