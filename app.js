@@ -66,6 +66,11 @@ function teamCode(name) {
 // ═══════════════════════════════════════════════
 
 function initSetup() {
+  if (G.setup.overs) $('totalOvers').value = G.setup.overs;
+  if (G.setup.players) $('playerCount').value = G.setup.players;
+  if (G.setup.team1) $('teamA').value = G.setup.team1;
+  if (G.setup.team2) $('teamB').value = G.setup.team2;
+  
   const ov = +$('totalOvers').value || 20;
   const pl = +$('playerCount').value || 11;
   buildPlayerGrids(pl);
@@ -1173,6 +1178,7 @@ function doRematch() {
   showScreen('setup');
   initSetup();
   saveState();
+  location.reload();
 }
 // ═══════════════════════════════════════════════
 //  BOOT
