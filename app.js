@@ -478,7 +478,10 @@ function checkOverDone() {
     m.curBowler = null;
     m.needBowler = true;
     swapBat();
-    if (!m.done) setTimeout(() => openBowlerModal(), 250);
+    if (!m.done) setTimeout(() => {
+      // FIX: Double-check done state at the time of execution
+      if (!G.match.done) openBowlerModal();
+    }, 250);
   }
 }
 
