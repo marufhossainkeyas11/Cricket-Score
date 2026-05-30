@@ -1369,8 +1369,11 @@ async function downloadSummary() {
         colorLight: '#8b949e',
         correctLevel: QRCode.CorrectLevel.M
       });
-      setTimeout(resolve, 200);
-    } catch (e) { resolve(); }
+      setTimeout(resolve, 600); 
+    } catch (e) {
+      console.error('QR Error:', e);
+      resolve();
+    }
   });
   
   const qrEl = qrHolder.querySelector('canvas') || qrHolder.querySelector('img');
@@ -1405,7 +1408,7 @@ async function downloadSummary() {
   y += 46;
   
   ctx.fillStyle = '#e6edf3';
-  ctx.font = 'bold italic 28px Rajdhani, sans-serif';
+  ctx.font = 'bold 28px inter, sans-serif';
   ctx.fillText(winnerMsg, W / 2, y + 26);
   y += 36;
   
