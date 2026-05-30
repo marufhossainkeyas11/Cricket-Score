@@ -286,8 +286,11 @@ function startMatch() {
       maxPoss += (+t.count || 0) * lim;
     }
   });
-  if (maxPoss < ov) { alert(`Over limits too low! Max possible: ${maxPoss} ov, need ${ov}.`); return; }
-  
+  if (maxPoss < ov) {
+    if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+    showToast(`Over limits too low! Max: ${maxPoss} ov, need ${ov}`);
+    return;
+  }
   G.setup = { team1, team2, overs: ov, players: pl, team1Names, team2Names, tiers: tierRows.map(t => ({ ...t })), batFirst: '' };
   G.inn1 = null;
   
