@@ -565,202 +565,6 @@ function resultUndo() {
   G.match.resultLocked = false;
   G.match.done = false;
   
-  function downloadSummary() {
-    const m = G.match,
-      s = G.setup,
-      i1 = G.inn1FullData;
-    const { winnerMsg } = G.resultData;
-    const inn1Team = i1 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
-    const inn2Team = i1 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : s.teamA;
-    
-    const W = 800,
-      PAD = 32;
-    let rows = [];
-    
-    // ── ডেটা কালেক্ট ──
-    function collectBat(batArr, label) {
-      rows.push({ type: 'inn', text: label });
-      rows.push({ type: 'hd', cols: ['Batter', '', 'R', 'B', '4s', '6s', 'SR'] });
-      batArr.filter(b => !b.notYet || b.out).forEach(b => {
-        const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '-';
-        rows.push({ type: 'bat', cols: [b.name, b.out ? b.howOut : 'not out', b.runs, b.balls, b.fours, b.sixes, sr] });
-      });
-    }
-    
-    function collectBowl(bowlMap, bowlOrder) {
-      rows.push({ type: 'hd2', cols: ['Bowler', 'Overs', 'R', 'W', 'Wd', 'NB', 'Eco'] });
-      bowlOrder.forEach(name => {
-        const b = bowlMap[name];
-        if (!b) return;
-        const ov = Math.floor(b.balls / 6),
-          rb = b.balls % 6;
-        const eco = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '-';
-        rows.push({ type: 'bowl', cols: [name, `${ov}.${rb}`, b.runs, b.wickets, b.wides || 0, b.noballs || 0, eco] });
-      });
-    }
-    
-    if (i1) {
-      const sc1 = `${i1.runs}/${i1.wickets} (${Math.floor(i1.balls/6)}.${i1.balls%6} ov)`;
-      collectBat(i1.bat, `${inn1Team}  ${sc1}`);
-      collectBowl(i1.bowlMap, i1.bowlOrder);
-    }
-    const sc2 = `${m.runs}/${m.wickets} (${Math.floor(m.balls/6)}.${m.balls%6} ov)`;
-    collectBat(m.bat, `${inn2Team}  ${sc2}`);
-    collectBowl(m.bowlMap, m.bowlOrder);
-    
-    // ── রো হাইট হিসাব ──
-    const ROW_H = 26,
-      INN_H = 36,
-      HD_H = 22;
-    let totalH = 120; // hero অংশ
-    rows.forEach(r => {
-      if (r.type === 'inn') totalH += INN_H + 8;
-      else if (r.type === 'hd' || r.type === 'hd2') totalH += HD_H;
-      else totalH += ROW_H;
-    });
-    totalH += 40; // footer
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = W * 2;
-    canvas.height = (totalH + 80) * 2; // 2x for retina
-    const ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
-    const H = totalH + 80;
-    
-    // ── Background ──
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0d1117');
-    bg.addColorStop(1, '#161b22');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-    
-    // subtle glow top-left
-    const glow = ctx.createRadialGradient(100, 60, 0, 100, 60, 280);
-    glow.addColorStop(0, 'rgba(21,101,192,0.18)');
-    glow.addColorStop(1, 'rgba(21,101,192,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, H);
-    
-    // ── Hero ──
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#f0b429';
-    ctx.font = 'bold 32px Inter, sans-serif';
-    ctx.fillText('🏆', W / 2, 46);
-    
-    ctx.fillStyle = '#e6edf3';
-    ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillText(winnerMsg, W / 2, 78);
-    
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '13px Inter, sans-serif';
-    ctx.fillText(`${s.teamA} vs ${s.teamB}  ·  ${s.overs} Overs`, W / 2, 100);
-    
-    // divider
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD, 114);
-    ctx.lineTo(W - PAD, 114);
-    ctx.stroke();
-    
-    // ── Table rows ──
-    let y = 124;
-    ctx.textAlign = 'left';
-    
-    const COLS_W = [220, 150, 45, 45, 35, 35, 55]; // col widths
-    const COLS_X = [PAD];
-    COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
-    
-    rows.forEach(r => {
-      if (r.type === 'inn') {
-        y += 8;
-        // pill background
-        ctx.fillStyle = 'rgba(21,101,192,0.12)';
-        roundRect(ctx, PAD - 8, y - 18, W - PAD * 2 + 16, INN_H, 8);
-        ctx.fill();
-        ctx.fillStyle = '#60a5fa';
-        ctx.font = 'bold 14px Inter, sans-serif';
-        ctx.fillText(r.text, PAD, y + 4);
-        y += INN_H + 4;
-      } else if (r.type === 'hd' || r.type === 'hd2') {
-        ctx.fillStyle = '#4a5568';
-        ctx.font = '600 11px Inter, sans-serif';
-        r.cols.forEach((c, i) => {
-          ctx.textAlign = i > 1 ? 'right' : 'left';
-          const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-          ctx.fillText(String(c).toUpperCase(), cx, y + 14);
-        });
-        ctx.textAlign = 'left';
-        y += HD_H;
-        // thin divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.beginPath();
-        ctx.moveTo(PAD, y);
-        ctx.lineTo(W - PAD, y);
-        ctx.stroke();
-      } else {
-        // bat or bowl row
-        const isEven = false;
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H);
-        
-        r.cols.forEach((c, i) => {
-          let color = '#e6edf3';
-          if (i === 1) color = '#4a5568'; // dismissal / overs
-          if (i === 2) color = '#22c55e'; // runs
-          if (i === 3 && r.type === 'bowl') color = '#f87171'; // wickets
-          if (i === 4 && r.type === 'bat') color = '#60a5fa'; // 4s
-          if (i === 5 && r.type === 'bat') color = '#f0b429'; // 6s
-          
-          ctx.fillStyle = color;
-          const isNum = i > 1;
-          ctx.textAlign = isNum ? 'right' : 'left';
-          ctx.font = i === 0 ? '500 13px Inter, sans-serif' : '13px Inter, sans-serif';
-          const cx = isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-          ctx.fillText(String(c), cx, y + 18);
-        });
-        ctx.textAlign = 'left';
-        
-        // row divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.beginPath();
-        ctx.moveTo(PAD, y + ROW_H);
-        ctx.lineTo(W - PAD, y + ROW_H);
-        ctx.stroke();
-        y += ROW_H;
-      }
-    });
-    
-    // ── Footer ──
-    y += 16;
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(0, y, W, 1);
-    ctx.fillStyle = '#4a5568';
-    ctx.font = '11px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Cricket Score · Match Summary', W / 2, y + 20);
-    
-    // ── Download ──
-    const link = document.createElement('a');
-    link.download = `${s.teamA}_vs_${s.teamB}_summary.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }
-  
-  // helper: rounded rect (canvas এ নেই পুরনো browser এ)
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
   const snap = JSON.parse(G.match.history.pop());
   const hist = G.match.history;
   Object.assign(G.match, snap);
@@ -975,11 +779,9 @@ function showResultScreen() {
   }
   
   const inn1Team = m.innings === 2 ?
-    (s.batFirst === s.team1 ? s.team1 : s.team2) :
-    s.teamA;
+    (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
   const inn2Team = m.innings === 2 ?
-    (s.batFirst === s.team1 ? s.team2 : s.team1) :
-    null;
+    (s.batFirst === s.team1 ? s.team2 : s.team1) : null;
   
   function buildBatRows(batArr) {
     return batArr.filter(b => !b.notYet || b.out).map(b => {
@@ -1017,7 +819,6 @@ function showResultScreen() {
   
   const d1 = G.inn1FullData || null;
   const d2 = m;
-  
   const ov1 = d1 ? `${Math.floor(d1.balls/6)}.${d1.balls%6}` : '—';
   const ov2 = `${Math.floor(d2.balls/6)}.${d2.balls%6}`;
   
@@ -1068,6 +869,19 @@ function showResultScreen() {
     <div class="rs-wrap" id="rs-capture">
       <div class="rs-glow"></div>
 
+      <!-- ব্র্যান্ডিং হেডার -->
+      <div class="rs-brand">
+        <img src="./logo.png" alt="Logo" class="rs-brand-logo">
+        <div class="rs-brand-text">
+          <div class="rs-brand-name">
+            <span class="bc">CRICKET</span> <span class="bs">SCORE</span>
+          </div>
+          <div class="rs-brand-tagline-wrapper">
+            <div class="rs-brand-tagline">CRICKET SCORING TOOL</div>
+          </div>
+        </div>
+      </div>
+
       <div class="rs-hero">
         <div class="rs-trophy">${winnerTeam === 'Tie' ? '🤝' : '🏆'}</div>
         <div class="rs-winner">${winnerMsg}</div>
@@ -1105,7 +919,6 @@ function showResultScreen() {
   G.screen = 'result';
   saveState();
 }
-
 // ═══════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════
@@ -1326,21 +1139,36 @@ document.addEventListener('DOMContentLoaded', () => {
   initSetup();
 });
 
-function downloadSummary() {
+async function loadFonts() {
+  try {
+    await document.fonts.load('bold 12px Rajdhani');
+    await document.fonts.load('600 12px Montserrat');
+    await document.fonts.ready;
+  } catch (e) { console.error(e); }
+}
+
+async function downloadSummary() {
+  await loadFonts();
   const m = G.match,
     s = G.setup,
     i1 = G.inn1FullData;
-  const { winnerMsg } = G.resultData;
+  const { winnerMsg, winnerTeam } = G.resultData;
   const inn1Team = i1 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
   const inn2Team = i1 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : s.teamA;
   
   const W = 800,
     PAD = 32;
+  // usable width = 800 - 32*2 = 736
+  // COLS total = 736
+  const COLS_W = [210, 190, 52, 52, 44, 44, 64]; // sum = 656... নিচে ব্যাখ্যা
+  // আসলে last col পর্যন্ত W-PAD এ align করবো, তাই sum টা exact না হলেও চলবে
+  const COLS_X = [PAD];
+  COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
+  
   let rows = [];
   
-  // ── ডেটা কালেক্ট ──
-  function collectBat(batArr, label) {
-    rows.push({ type: 'inn', text: label });
+  function collectBat(batArr, teamName, color, score) {
+    rows.push({ type: 'inn', text: teamName, score, color });
     rows.push({ type: 'hd', cols: ['Batter', '', 'R', 'B', '4s', '6s', 'SR'] });
     batArr.filter(b => !b.notYet || b.out).forEach(b => {
       const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '-';
@@ -1359,162 +1187,331 @@ function downloadSummary() {
       const eco = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '-';
       rows.push({ type: 'bowl', cols: [name, `${ov}.${rb}`, b.runs, b.wickets, b.wides || 0, b.noballs || 0, eco] });
     });
-    rows.push({ type: 'gap' });
+    rows.push({ type: 'inn-gap' });
   }
   
   if (i1) {
     const sc1 = `${i1.runs}/${i1.wickets} (${Math.floor(i1.balls/6)}.${i1.balls%6} ov)`;
-    collectBat(i1.bat, `${inn1Team}  ${sc1}`);
+    collectBat(i1.bat, inn1Team, 'blue', sc1);
     collectBowl(i1.bowlMap, i1.bowlOrder);
   }
   const sc2 = `${m.runs}/${m.wickets} (${Math.floor(m.balls/6)}.${m.balls%6} ov)`;
-  collectBat(m.bat, `${inn2Team}  ${sc2}`);
+  collectBat(m.bat, inn2Team, 'red', sc2);
   collectBowl(m.bowlMap, m.bowlOrder);
   
-  // ── রো হাইট হিসাব ──
-  const ROW_H = 26,
-    INN_H = 36,
-    HD_H = 22;
-  let totalH = 120; // hero অংশ
-  // forEach এ
+  // ── Height calculation ──
+  const ROW_H = 28,
+    INN_H = 38,
+    HD_H = 24,
+    GAP_H = 12,
+    INN_GAP_H = 10;
+  const HDR_H = 86,
+    HERO_H = 118,
+    FOOTER_H = 20;
+  let tableH = 0;
   rows.forEach(r => {
-    if (r.type === 'inn') totalH += INN_H + 8;
-    else if (r.type === 'hd' || r.type === 'bowl-hd') totalH += HD_H + 4;
-    else if (r.type === 'gap') totalH += 14;
-    else totalH += ROW_H;
+    if (r.type === 'inn') tableH += INN_H + 10;
+    else if (r.type === 'hd' || r.type === 'bowl-hd') tableH += HD_H + 6;
+    else if (r.type === 'gap') tableH += GAP_H;
+    else if (r.type === 'inn-gap') tableH += INN_GAP_H;
+    else tableH += ROW_H;
   });
-  totalH += 40; // footer
+  const totalH = HDR_H + HERO_H + tableH + FOOTER_H;
   
   const canvas = document.createElement('canvas');
   canvas.width = W * 2;
-  canvas.height = (totalH + 80) * 2; // 2x for retina
+  canvas.height = totalH * 2;
   const ctx = canvas.getContext('2d');
   ctx.scale(2, 2);
-  const H = totalH + 80;
   
   // ── Background ──
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0d1117');
-  bg.addColorStop(1, '#161b22');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, totalH);
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, totalH);
+  bgGrad.addColorStop(0, '#111827');
+  bgGrad.addColorStop(1, '#0d1117');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, totalH);
   
-  // subtle glow top-left
-  const glow = ctx.createRadialGradient(100, 60, 0, 100, 60, 280);
-  glow.addColorStop(0, 'rgba(21,101,192,0.18)');
-  glow.addColorStop(1, 'rgba(21,101,192,0)');
+  // top glow
+  const glow = ctx.createRadialGradient(200, 0, 0, 200, 0, 300);
+  glow.addColorStop(0, 'rgba(21,101,192,0.12)');
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, W, totalH);
   
-  // ── Hero ──
+  // ════════════════════════════════
+  // HEADER
+  // ════════════════════════════════
+  ctx.fillStyle = 'rgba(255,255,255,0.02)';
+  ctx.fillRect(0, 0, W, HDR_H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, HDR_H);
+  ctx.lineTo(W, HDR_H);
+  ctx.stroke();
+  
+  // Logo
+  const logoImg = new Image();
+  logoImg.src = './logo.png';
+  await new Promise(res => {
+    logoImg.onload = res;
+    logoImg.onerror = res;
+    setTimeout(res, 600);
+  });
+  
+  const LOGO_H = 54,
+    logoY = (HDR_H - LOGO_H) / 2;
+  let logoDrawW = LOGO_H; // default — বাইরে declare
+  
+  const brandBlockH = 42;
+  const brandBlockY = (HDR_H - brandBlockH) / 2 + 5;
+  
+  if (logoImg.complete && logoImg.naturalWidth > 0) {
+    const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
+    logoDrawW = LOGO_H * ratio;
+    ctx.drawImage(logoImg, PAD, logoY, logoDrawW, LOGO_H);
+  } else {
+    // monogram fallback
+    ctx.font = 'bold italic 38px Inter, sans-serif';
+    ctx.fillStyle = '#1565C0';
+    ctx.textAlign = 'left';
+    ctx.fillText('C', PAD, logoY + 40);
+    ctx.fillStyle = '#D32F2F';
+    ctx.fillText('S', PAD + 26, logoY + 40);
+    ctx.strokeStyle = '#f0b429';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(PAD + 25, logoY + 5);
+    ctx.lineTo(PAD + 14, logoY + 46);
+    ctx.stroke();
+  }
+  
+  // Brand text
+  // Brand text — হোম পেজের মতো
+  const tx = PAD + logoDrawW + 14;
+  ctx.textAlign = 'left';
+  
+  // "CRICKET SCORE" — Rajdhani bold italic style
+  ctx.font = 'bold italic 32px Rajdhani, sans-serif';
+  ctx.fillStyle = '#1565C0';
+  ctx.fillText('CRICKET', tx, brandBlockY + 18);
+  const cW = ctx.measureText('CRICKET ').width;
+  ctx.fillStyle = '#D32F2F';
+  ctx.fillText('SCORE', tx + cW, brandBlockY + 18);
+  
+  // tagline wrapper — CSS এর মতো: line + text + line
+  // tagline wrapper
+  const tagText = 'CRICKET SCORING TOOL';
+  const tagY = brandBlockY + 34;
+  const lineH = 1.5;
+  const lineW = 18;
+  const gap = 6;
+  const lineVertical = tagY - 4;
+  
+  // brandCenterX বের করো Rajdhani দিয়ে
+  ctx.font = 'bold italic 32px Rajdhani, sans-serif';
+  const brandCenterX = tx + (ctx.measureText('CRICKET ').width + ctx.measureText('SCORE').width) / 2;
+  
+  // actual tagline width বের করো — loop এর মতো করেই measure করো
+  ctx.font = '600 7.5px Montserrat, sans-serif';
+  let actualTagW = 0;
+  for (const ch of tagText) {
+    actualTagW += ctx.measureText(ch).width + 3.5;
+  }
+  actualTagW -= 3.5; // শেষ character এর পরে extra spacing নেই
+  
+  const totalTaglineW = lineW + gap + actualTagW + gap + lineW;
+  const taglineStartX = brandCenterX - totalTaglineW / 2;
+  
+  // বাম line — নীল
+  ctx.fillStyle = '#1565C0';
+  ctx.fillRect(taglineStartX, lineVertical, lineW, lineH);
+  
+  // tagline text
+  ctx.fillStyle = '#8b949e';
+  let curX = taglineStartX + lineW + gap;
+  for (const ch of tagText) {
+    ctx.fillText(ch, curX, tagY);
+    curX += ctx.measureText(ch).width + 3.5;
+  }
+  
+  // ডান line — লাল (exact position)
+  ctx.fillStyle = '#D32F2F';
+  ctx.fillRect(taglineStartX + lineW + gap + actualTagW + gap, lineVertical, lineW, lineH);
+  // ── QR — right side of header ──
+  const QR_SIZE = 54;
+  const qrX = W - PAD - QR_SIZE;
+  const qrY_hdr = (HDR_H - QR_SIZE) / 2;
+  const siteUrl = window.location.origin + window.location.pathname;
+  
+  // Date — left of QR, vertically centered
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+  ctx.textAlign = 'right';
+  ctx.font = '700 10px Inter, sans-serif';
+  ctx.fillStyle = '#60a5fa';
+  ctx.fillText(dateStr, qrX - 14, HDR_H / 2 + 4);
+  ctx.textAlign = 'left';
+  
+  // Generate QR
+  const qrHolder = document.createElement('div');
+  qrHolder.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:200px;height:200px;';
+  document.body.appendChild(qrHolder);
+  await new Promise(resolve => {
+    try {
+      new QRCode(qrHolder, {
+        text: siteUrl,
+        width: 200,
+        height: 200,
+        colorDark: '#1e2736',
+        colorLight: '#8b949e',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      setTimeout(resolve, 200);
+    } catch (e) { resolve(); }
+  });
+  
+  const qrEl = qrHolder.querySelector('canvas') || qrHolder.querySelector('img');
+  
+  // QR container — rounded dark box
+  ctx.fillStyle = '#8b949e';
+  roundRect(ctx, qrX - 4, qrY_hdr - 4, QR_SIZE + 8, QR_SIZE + 8, 5);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  roundRect(ctx, qrX - 4, qrY_hdr - 4, QR_SIZE + 8, QR_SIZE + 8, 5);
+  ctx.stroke();
+  
+  if (qrEl) {
+    ctx.drawImage(qrEl, qrX, qrY_hdr, QR_SIZE, QR_SIZE);
+  } else {
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR', qrX + QR_SIZE / 2, qrY_hdr + QR_SIZE / 2 + 4);
+  }
+  document.body.removeChild(qrHolder);
+  
+  // ════════════════════════════════
+  // HERO
+  // ════════════════════════════════
+  let y = HDR_H + 16;
+  
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#f0b429';
-  ctx.font = 'bold 32px Inter, sans-serif';
-  ctx.fillText('🏆', W / 2, 46);
+  ctx.font = '34px serif';
+  ctx.fillText(winnerTeam === 'Tie' ? '🤝' : '🏆', W / 2, y + 34);
+  y += 46;
   
   ctx.fillStyle = '#e6edf3';
-  ctx.font = 'bold 22px Inter, sans-serif';
-  ctx.fillText(winnerMsg, W / 2, 78);
+  ctx.font = 'bold italic 28px Rajdhani, sans-serif';
+  ctx.fillText(winnerMsg, W / 2, y + 26);
+  y += 36;
   
   ctx.fillStyle = '#8b949e';
   ctx.font = '13px Inter, sans-serif';
-  ctx.fillText(`${s.teamA} vs ${s.teamB}  ·  ${s.overs} Overs`, W / 2, 100);
+  ctx.fillText(`${inn1Team}  vs  ${inn2Team || s.teamB}  ·  ${s.overs} Overs`, W / 2, y + 16);
+  y += 28;
   
   // divider
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(PAD, 114);
-  ctx.lineTo(W - PAD, 114);
+  ctx.moveTo(PAD, y);
+  ctx.lineTo(W - PAD, y);
   ctx.stroke();
+  y += 14;
   
-  // ── Table rows ──
-  let y = 124;
+  // ════════════════════════════════
+  // TABLE
+  // ════════════════════════════════
   ctx.textAlign = 'left';
   
-  const COLS_W = [220, 150, 45, 45, 35, 35, 55]; // col widths
-  const COLS_X = [PAD];
-  COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
-  
   rows.forEach(r => {
+    
     if (r.type === 'inn') {
-      y += 8;
-      // pill background
-      ctx.fillStyle = 'rgba(21,101,192,0.12)';
-      roundRect(ctx, PAD - 8, y - 18, W - PAD * 2 + 16, INN_H, 8);
+      const isBlue = r.color === 'blue';
+      const bgFill = isBlue ? 'rgba(21,101,192,0.18)' : 'rgba(185,28,28,0.18)';
+      const accent = isBlue ? '#1565C0' : '#991b1b';
+      const nameCol = isBlue ? '#60a5fa' : '#f87171';
+      
+      ctx.fillStyle = bgFill;
+      roundRect(ctx, 0, y, W, INN_H, 0);
       ctx.fill();
-      ctx.fillStyle = '#60a5fa';
+      // left accent bar
+      ctx.fillStyle = accent;
+      ctx.fillRect(0, y, 4, INN_H);
+      
+      // Team name left
+      ctx.fillStyle = nameCol;
       ctx.font = 'bold 14px Inter, sans-serif';
-      ctx.fillText(r.text, PAD, y + 4);
-      y += INN_H + 4;
-    } else if (r.type === 'hd' || r.type === 'hd2') {
-      ctx.fillStyle = '#4a5568';
-      ctx.font = '600 11px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(r.text, PAD + 6, y + INN_H / 2 + 5);
+      
+      // Score right
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = '600 13px Inter, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(r.score || '', W - PAD, y + INN_H / 2 + 5);
+      
+      ctx.textAlign = 'left';
+      y += INN_H + 10;
+      
+    } else if (r.type === 'hd' || r.type === 'bowl-hd') {
+      ctx.fillStyle = '#3d4f63';
+      ctx.font = '600 10px Inter, sans-serif';
       r.cols.forEach((c, i) => {
         ctx.textAlign = i > 1 ? 'right' : 'left';
-        const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
+        // last col align to W-PAD
+        const cx = i === r.cols.length - 1 ? W - PAD : (i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i]);
         ctx.fillText(String(c).toUpperCase(), cx, y + 14);
       });
       ctx.textAlign = 'left';
-      y += HD_H;
-      // thin divider
       ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.beginPath();
-      ctx.moveTo(PAD, y);
-      ctx.lineTo(W - PAD, y);
-      ctx.stroke();
-    } else if (r.type === 'gap') {
-      // optional: একটা faint divider লাইন
-      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(PAD, y + 7);
-      ctx.lineTo(W - PAD, y + 7);
+      ctx.moveTo(PAD, y + HD_H + 3);
+      ctx.lineTo(W - PAD, y + HD_H + 3);
       ctx.stroke();
-      y += 14;
+      y += HD_H + 6;
       
-    } else if (r.type === 'bowl-hd') {
-      // batting hd এর মতোই, আলাদা color দিতে পারো
-      ctx.fillStyle = '#4a5568';
-      ctx.font = '600 11px Inter, sans-serif';
-      r.cols.forEach((c, i) => {
-        ctx.textAlign = i > 1 ? 'right' : 'left';
-        const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-        ctx.fillText(String(c).toUpperCase(), cx, y + 14);
-      });
-      ctx.textAlign = 'left';
-      // underline
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    } else if (r.type === 'gap') {
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(PAD, y + HD_H + 2);
-      ctx.lineTo(W - PAD, y + HD_H + 2);
+      ctx.moveTo(PAD, y + GAP_H / 2);
+      ctx.lineTo(W - PAD, y + GAP_H / 2);
       ctx.stroke();
-      y += HD_H + 4;
+      y += GAP_H;
+      
+    } else if (r.type === 'inn-gap') {
+      y += INN_GAP_H;
+      
     } else {
-      // bat or bowl row
-      const isEven = false;
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H);
+      // data row
+      ctx.fillStyle = 'rgba(255,255,255,0.012)';
+      ctx.fillRect(0, y, W, ROW_H);
       
       r.cols.forEach((c, i) => {
-        let color = '#e6edf3';
-        if (i === 1) color = '#4a5568'; // dismissal / overs
-        if (i === 2) color = '#22c55e'; // runs
-        if (i === 3 && r.type === 'bowl') color = '#f87171'; // wickets
-        if (i === 4 && r.type === 'bat') color = '#60a5fa'; // 4s
-        if (i === 5 && r.type === 'bat') color = '#f0b429'; // 6s
-        
+        let color = '#c9d1d9';
+        if (i === 1) color = '#4a5568';
+        if (i === 2) color = '#22c55e';
+        if (i === 3 && r.type === 'bowl') color = '#f87171';
+        if (i === 4 && r.type === 'bat') color = '#60a5fa';
+        if (i === 5 && r.type === 'bat') color = '#f0b429';
         ctx.fillStyle = color;
         const isNum = i > 1;
         ctx.textAlign = isNum ? 'right' : 'left';
-        ctx.font = i === 0 ? '500 13px Inter, sans-serif' : '13px Inter, sans-serif';
-        const cx = isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-        ctx.fillText(String(c), cx, y + 18);
+        ctx.font = i === 0 ? '500 12px Inter, sans-serif' : '12px Inter, sans-serif';
+        // last numeric col → W-PAD
+        const cx = i === r.cols.length - 1 ? W - PAD : (isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i]);
+        ctx.fillText(String(c), cx, y + 19);
       });
       ctx.textAlign = 'left';
       
-      // row divider
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(PAD, y + ROW_H);
       ctx.lineTo(W - PAD, y + ROW_H);
@@ -1522,15 +1519,6 @@ function downloadSummary() {
       y += ROW_H;
     }
   });
-  
-  // ── Footer ──
-  y += 16;
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.fillRect(0, y, W, 1);
-  ctx.fillStyle = '#4a5568';
-  ctx.font = '11px Inter, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('Cricket Score · Match Summary', W / 2, y + 20);
   
   // ── Download ──
   const link = document.createElement('a');
