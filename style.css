@@ -1151,7 +1151,6 @@ button {
   width: 100%;
   max-width: 400px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
-  animation: su .18s ease;
   max-height: 90dvh;
   overflow-y: auto
 }
@@ -1784,4 +1783,42 @@ button {
   letter-spacing: 3px;
   color: var(--t2);
   white-space: nowrap;
+}
+
+/* Shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e2736;
+  border: 1px solid rgba(229,57,53,0.4);
+  color: #f87171;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
