@@ -250,6 +250,19 @@
       </div>
     </div>
   </div>
+
+<div id="openingBatModal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <div class="modal-ttl">🏏 Opening Batsmen</div>
+        <div class="bowler-info">
+          First pick <b>Striker</b> <br/>Second pick <b>Non-Striker</b>
+        </div>
+      <div id="openingBatList"></div>
+      <div class="mact">
+        <button class="mbtn-ok" onclick="confirmOpeningBat()">Confirm</button>
+      </div>
+    </div>
+  </div>
   
   <div id="bowlerModal" class="modal-bg" style="display:none">
     <div class="modal">
@@ -296,7 +309,7 @@
   
   <div class="toast" id="toast"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="app.js"></script>
+  <script src="script.js"></script>
   <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
