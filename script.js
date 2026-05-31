@@ -848,10 +848,10 @@ function showExtraModal(type) {
   extraState = { type, batRuns: 0, totalRuns: 1 };
   
   const titles = {
-    noball: '⚪ No Ball',
-    wide: '↔ Wide',
-    bye: '🏃 Bye',
-    legbye: '🦵 Leg Bye',
+    noball: 'No Ball',
+    wide: 'Wide',
+    bye: 'Bye',
+    legbye: 'Leg Bye',
   };
   
   const infos = {
