@@ -28,7 +28,7 @@ function clearState() { localStorage.removeItem(SAVE_KEY); }
 let G = {
   screen: 'setup',
   // FIX 1: setup now stores "team1" and "team2" with names only — no bat/bowl distinction
-  setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '' },
+  setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '', byeAllowed: true},
   match: null,
   inn1: null,
 };
@@ -457,7 +457,7 @@ function startMatch() {
     showToast(`Over limits too low! Max: ${maxPoss} ov, need ${ov}`);
     return;
   }
-  G.setup = { team1, team2, overs: ov, players: pl, team1Names, team2Names, tiers: tierRows.map(t => ({ ...t })), batFirst: '' };
+  G.setup = { team1, team2, overs: ov, players: pl, team1Names, team2Names, tiers: tierRows.map(t => ({ ...t })), batFirst: '', byeAllowed: $('byeAllowedToggle').checked};
   G.inn1 = null;
   
   // FIX 1: Show toss modal before starting
@@ -592,6 +592,17 @@ function initMatch(innings) {
 // ═══════════════════════════════════════════════
 //  BALL
 // ═══════════════════════════════════════════════
+
+function ballLbl(b) {
+  if (b.isW) return 'W';
+  if (b.extra === 'wide') return b.runs > 1 ? `Wd+${b.runs - 1}` : 'Wd';
+  if (b.extra === 'noball') return b.batRuns > 0 ? `NB+${b.batRuns}` : 'NB';
+  if (b.extra === 'bye') return b.runs > 1 ? `B${b.runs}` : 'B';
+  if (b.extra === 'legbye') return b.runs > 1 ? `LB${b.runs}` : 'LB';
+  if (b.runs === 0) return '·';
+  return b.runs;
+}
+
 
 function ball(runs, extra) {
   const m = G.match;
@@ -814,6 +825,238 @@ function resultUndo() {
   renderAll();
   saveState();
 }
+
+// ═══════════════════════════════════════════════
+//  EXTRA MODAL — No Ball, Wide, Bye, Leg Bye
+// ═══════════════════════════════════════════════
+
+let extraState = { type: null, batRuns: 0, totalRuns: 1 };
+
+function showExtraModal(type) {
+  const m = G.match;
+  if (!m || m.done || m.needBowler || m.needBatsmen) return;
+  
+  const byeAllowed = G.setup.byeAllowed !== false; // default true
+  
+  // If bye is off, Bye & LegBye buttons shouldn't even open modal
+  // But as safety net:
+  if ((type === 'bye' || type === 'legbye') && !byeAllowed) {
+    showToast('Bye runs are disabled for this match');
+    return;
+  }
+  
+  extraState = { type, batRuns: 0, totalRuns: 1 };
+  
+  const titles = {
+    noball: '⚪ No Ball',
+    wide: '↔ Wide',
+    bye: '🏃 Bye',
+    legbye: '🦵 Leg Bye',
+  };
+  
+  const infos = {
+    noball: byeAllowed ?
+      'No Ball: +1 extra (automatic). Select bat runs scored. If batters also ran byes off the no ball, that counts too.' : 'No Ball: +1 extra (automatic). Select bat runs only — bye runs disabled.',
+    wide: byeAllowed ?
+      'Wide: +1 extra (automatic). If batters ran additional runs (bye off wide), select below.' : 'Wide: +1 extra only. Bye runs disabled — batters cannot score extra runs off a wide.',
+    bye: 'Bye: Ball missed bat & keeper, batters ran. Select runs scored.',
+    legbye: 'Leg Bye: Deflected off body, batters ran. Select runs scored.',
+  };
+  
+  $('extraModalTitle').textContent = titles[type];
+  $('extraModalInfo').textContent = infos[type];
+  
+  const batFld = $('extraBatRunFld');
+  const batGrid = $('extraBatRunGrid');
+  const runGrid = $('extraRunGrid');
+  const runLabel = $('extraRunLabel');
+  
+  batGrid.innerHTML = '';
+  runGrid.innerHTML = '';
+  
+  if (type === 'noball') {
+    batFld.style.display = 'block';
+    runLabel.textContent = 'Total = bat runs + 1 NB';
+    
+    [0, 1, 2, 3, 4, 6].forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'db';
+      btn.textContent = r === 4 ? '4' : r === 6 ? '6' : String(r);
+      btn.onclick = () => {
+        document.querySelectorAll('#extraBatRunGrid .db').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        extraState.batRuns = r;
+        extraState.byeRuns = 0;
+        extraState.totalRuns = r + 1;
+        $('extraRunLabel').textContent = `Total = ${r} bat + 1 NB = ${r + 1} runs`;
+        buildTotalDisplay(r + 1);
+      };
+      batGrid.appendChild(btn);
+    });
+    
+    batGrid.querySelector('.db').classList.add('sel');
+    extraState.batRuns = 0;
+    extraState.byeRuns = 0;
+    extraState.totalRuns = 1;
+    buildTotalDisplay(1);
+    
+  } else if (type === 'wide') {
+    batFld.style.display = 'none';
+    
+    if (byeAllowed) {
+      runLabel.textContent = 'Additional bye runs (if batters ran off the wide)';
+      [0, 1, 2, 3, 4].forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = 'db' + (r === 0 ? ' sel' : '');
+        btn.textContent = r === 0 ? '0 (wide only)' : `+${r} bye`;
+        btn.dataset.val = r;
+        btn.onclick = () => {
+          document.querySelectorAll('#extraRunGrid .db').forEach(b => b.classList.remove('sel'));
+          btn.classList.add('sel');
+          extraState.totalRuns = r + 1;
+          extraState.batRuns = 0;
+        };
+        runGrid.appendChild(btn);
+      });
+      extraState.totalRuns = 1;
+    } else {
+      // bye off: wide = exactly 1, no modal needed at all
+      // directly process and return
+      closeModal('extraModal');
+      const m = G.match;
+      saveSnap();
+      m.runs += 1;
+      m.extras.wide = (m.extras.wide || 0) + 1;
+      addBowlerBall(1, false, 'wide');
+      m.curOver.push({ runs: 1, extra: 'wide', isLegal: false, isW: false, batRuns: 0, byeRuns: 0 });
+      flash('r');
+      checkInningsDone();
+      renderAll();
+      saveState();
+      return;
+    }
+  } else {
+    // Bye / Leg Bye — only reachable if byeAllowed
+    batFld.style.display = 'none';
+    runLabel.textContent = 'Runs scored';
+    [1, 2, 3, 4].forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'db' + (r === 1 ? ' sel' : '');
+      btn.textContent = r === 4 ? '4 (boundary)' : String(r);
+      btn.dataset.val = r;
+      btn.onclick = () => {
+        document.querySelectorAll('#extraRunGrid .db').forEach(b => b.classList.remove('sel'));
+        btn.classList.add('sel');
+        extraState.totalRuns = r;
+        extraState.batRuns = 0;
+      };
+      runGrid.appendChild(btn);
+    });
+    extraState.totalRuns = 1;
+  }
+  
+  
+  
+  openModal('extraModal');
+}
+
+// Live total label update for No Ball
+function updateNBTotal() {
+  const total = extraState.batRuns + 1 + (extraState.byeRuns || 0);
+  extraState.totalRuns = total;
+  // Update the label to show running total
+  $('extraRunLabel').textContent =
+    `Bye runs off No Ball — Total will be: ${total} (${extraState.batRuns} bat + 1 NB${extraState.byeRuns ? ' + ' + extraState.byeRuns + ' bye' : ''})`;
+}
+
+function buildTotalDisplay(total) {
+  const runGrid = $('extraRunGrid');
+  runGrid.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'db sel';
+  btn.dataset.val = total;
+  btn.textContent = `${total} run${total !== 1 ? 's' : ''} total`;
+  runGrid.appendChild(btn);
+}
+
+function confirmExtra() {
+  const { type, batRuns, totalRuns, byeRuns = 0 } = extraState;
+  closeModal('extraModal');
+  
+  const m = G.match;
+  saveSnap();
+  
+  const byeAllowed = G.setup.byeAllowed !== false;
+  const isLegalDelivery = (type === 'bye' || type === 'legbye');
+  
+  m.runs += totalRuns;
+  
+  if (type === 'noball') {
+    m.extras.noball = (m.extras.noball || 0) + 1;
+    
+    // Bat runs → scorer's bat column
+    if (batRuns > 0) {
+      m.bat[m.striker].runs += batRuns;
+      m.bat[m.striker].fours += batRuns === 4 ? 1 : 0;
+      m.bat[m.striker].sixes += batRuns === 6 ? 1 : 0;
+    }
+    
+    // Bye runs off NB → extras.bye
+    if (byeAllowed && byeRuns > 0) {
+      m.extras.bye = (m.extras.bye || 0) + byeRuns;
+    }
+    
+    addBowlerBall(totalRuns, false, 'noball');
+    
+    // Strike rotates on odd BAT runs (bye runs don't rotate strike)
+    if (batRuns % 2 === 1) swapBat();
+    
+  } else if (type === 'wide') {
+    m.extras.wide = (m.extras.wide || 0) + 1;
+    
+    // Extra bye runs off wide → extras.bye
+    const byeRunsOff = byeAllowed ? (totalRuns - 1) : 0;
+    if (byeRunsOff > 0) {
+      m.extras.bye = (m.extras.bye || 0) + byeRunsOff;
+    }
+    
+    addBowlerBall(totalRuns, false, 'wide');
+    
+    // Strike rotates on odd bye runs off wide
+    if (byeRunsOff % 2 === 1) swapBat();
+    
+  } else if (type === 'bye') {
+    m.extras.bye = (m.extras.bye || 0) + totalRuns;
+    m.bat[m.striker].balls++;
+    addBowlerBall(totalRuns, true, null);
+    m.balls++;
+    if (totalRuns % 2 === 1) swapBat();
+    
+  } else if (type === 'legbye') {
+    m.extras.legbye = (m.extras.legbye || 0) + totalRuns;
+    m.bat[m.striker].balls++;
+    addBowlerBall(totalRuns, true, null);
+    m.balls++;
+    if (totalRuns % 2 === 1) swapBat();
+  }
+  
+  m.curOver.push({
+    runs: totalRuns,
+    extra: type,
+    isLegal: isLegalDelivery,
+    isW: false,
+    batRuns,
+    byeRuns,
+  });
+  
+  flash(totalRuns >= 4 ? 'g' : 'r');
+  
+  if (isLegalDelivery) checkOverDone();
+  checkInningsDone();
+  renderAll();
+  saveState();
+}
+
 
 // ═══════════════════════════════════════════════
 //  WICKET MODAL
