@@ -66,6 +66,11 @@ function teamCode(name) {
 // ═══════════════════════════════════════════════
 
 function initSetup() {
+  if (G.setup.overs) $('totalOvers').value = G.setup.overs;
+  if (G.setup.players) $('playerCount').value = G.setup.players;
+  if (G.setup.team1) $('teamA').value = G.setup.team1;
+  if (G.setup.team2) $('teamB').value = G.setup.team2;
+  
   const ov = +$('totalOvers').value || 20;
   const pl = +$('playerCount').value || 11;
   buildPlayerGrids(pl);
@@ -286,8 +291,11 @@ function startMatch() {
       maxPoss += (+t.count || 0) * lim;
     }
   });
-  if (maxPoss < ov) { alert(`Over limits too low! Max possible: ${maxPoss} ov, need ${ov}.`); return; }
-  
+  if (maxPoss < ov) {
+    if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+    showToast(`Over limits too low! Max: ${maxPoss} ov, need ${ov}`);
+    return;
+  }
   G.setup = { team1, team2, overs: ov, players: pl, team1Names, team2Names, tiers: tierRows.map(t => ({ ...t })), batFirst: '' };
   G.inn1 = null;
   
@@ -298,16 +306,23 @@ function startMatch() {
 // ── TOSS MODAL ──
 function showTossModal() {
   const s = G.setup;
-  const modal = $('tossModal');
-  
-  // Build toss options
   $('tossInfo').innerHTML = `
-    <p style="margin-bottom:12px;color:var(--txt2)">Who won the toss and elected to <strong>bat first</strong>?</p>
-    <div class="toss-btns">
-      <button class="toss-pick" id="tossPick1" onclick="pickToss('${s.team1}')">${s.team1}</button>
-      <button class="toss-pick" id="tossPick2" onclick="pickToss('${s.team2}')">${s.team2}</button>
+    <p style="margin-bottom:12px;color:var(--t2)">Who won the toss?</p>
+    <div class="toss-btns" id="tossWinnerBtns">
+      <button class="toss-pick" id="tossPick1" onclick="pickTossWinner('${s.team1}', this)">${s.team1}</button>
+      <button class="toss-pick" id="tossPick2" onclick="pickTossWinner('${s.team2}', this)">${s.team2}</button>
+    </div>
+    <div id="tossElectDiv" style="display:none;margin-top:18px">
+      <p style="margin-bottom:10px;color:var(--t2)"><span id="tossWinnerLabel"></span> elected to:</p>
+      <div class="toss-btns">
+        <button class="toss-pick" id="tossElectBat" onclick="pickTossElect('bat', this)">🏏 Bat</button>
+        <button class="toss-pick" id="tossElectBowl" onclick="pickTossElect('bowl', this)">⚪ Bowl</button>
+      </div>
     </div>
   `;
+  G.setup.tossWinner = '';
+  G.setup.tossElect = '';
+  G.setup.batFirst = '';
   openModal('tossModal');
 }
 
@@ -321,7 +336,12 @@ function pickToss(teamName) {
 }
 
 function confirmToss() {
-  if (!G.setup.batFirst) { alert('Please select who bats first'); return; }
+  if (!G.setup.tossWinner || !G.setup.tossElect) {
+    shakeModal('tossModal');
+    showToast(!G.setup.tossWinner ? 'Select who won the toss' : 'Select Bat or Bowl');
+    return;
+  }
+  
   closeModal('tossModal');
   
   const s = G.setup;
@@ -342,7 +362,29 @@ function confirmToss() {
   initMatch(1);
   showScreen('scoring');
   saveState();
-  setTimeout(() => openBowlerModal(), 200);
+  setTimeout(() => openOpeningBatsmenModal(), 200);
+}
+
+function pickTossWinner(teamName, btn) {
+  document.querySelectorAll('#tossWinnerBtns .toss-pick').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  G.setup.tossWinner = teamName;
+  G.setup.tossElect = '';
+  document.querySelectorAll('#tossElectBat, #tossElectBowl').forEach(b => b.classList.remove('sel'));
+  $('tossWinnerLabel').textContent = teamName;
+  $('tossElectDiv').style.display = 'block';
+}
+
+function pickTossElect(elect, btn) {
+  document.querySelectorAll('#tossElectBat, #tossElectBowl').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  G.setup.tossElect = elect;
+  const s = G.setup;
+  if (elect === 'bat') {
+    s.batFirst = s.tossWinner;
+  } else {
+    s.batFirst = (s.tossWinner === s.team1) ? s.team2 : s.team1;
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -374,6 +416,7 @@ function initMatch(innings) {
     curBowler: null,
     prevBowler: null,
     needBowler: true,
+    needBatsmen: true,
     history: [],
     done: false,
   };
@@ -391,7 +434,7 @@ function initMatch(innings) {
 
 function ball(runs, extra) {
   const m = G.match;
-  if (!m || m.done || m.needBowler) return;
+  if (!m || m.done || m.needBowler || m.needBatsmen) return;
   
   const isLegal = extra !== 'wide' && extra !== 'noball';
   saveSnap();
@@ -478,7 +521,10 @@ function checkOverDone() {
     m.curBowler = null;
     m.needBowler = true;
     swapBat();
-    if (!m.done) setTimeout(() => openBowlerModal(), 250);
+    if (!m.done) setTimeout(() => {
+      // FIX: Double-check done state at the time of execution
+      if (!G.match.done) openBowlerModal();
+    }, 250);
   }
 }
 
@@ -503,6 +549,24 @@ function checkInningsDone() {
   }
 }
 
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function shakeModal(modalId) {
+  const m = $(modalId).querySelector('.modal');
+  if (!m) return;
+  m.classList.remove('shake');
+  void m.offsetWidth;
+  m.classList.add('shake');
+  m.addEventListener('animationend', () => m.classList.remove('shake'), { once: true });
+  if (navigator.vibrate) navigator.vibrate([60, 30, 60]);
+}
+
 // ═══════════════════════════════════════════════
 //  UNDO — FIX 2: Close bowler modal if open, restore doneOvers properly
 // ═══════════════════════════════════════════════
@@ -525,6 +589,7 @@ function saveSnap() {
     curBowler: G.match.curBowler,
     prevBowler: G.match.prevBowler,
     needBowler: G.match.needBowler,
+    needBatsmen: G.match.needBatsmen,
     done: G.match.done,
   });
   G.match.history.push(snap);
@@ -565,202 +630,6 @@ function resultUndo() {
   G.match.resultLocked = false;
   G.match.done = false;
   
-  function downloadSummary() {
-    const m = G.match,
-      s = G.setup,
-      i1 = G.inn1FullData;
-    const { winnerMsg } = G.resultData;
-    const inn1Team = i1 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
-    const inn2Team = i1 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : s.teamA;
-    
-    const W = 800,
-      PAD = 32;
-    let rows = [];
-    
-    // ── ডেটা কালেক্ট ──
-    function collectBat(batArr, label) {
-      rows.push({ type: 'inn', text: label });
-      rows.push({ type: 'hd', cols: ['Batter', '', 'R', 'B', '4s', '6s', 'SR'] });
-      batArr.filter(b => !b.notYet || b.out).forEach(b => {
-        const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '-';
-        rows.push({ type: 'bat', cols: [b.name, b.out ? b.howOut : 'not out', b.runs, b.balls, b.fours, b.sixes, sr] });
-      });
-    }
-    
-    function collectBowl(bowlMap, bowlOrder) {
-      rows.push({ type: 'hd2', cols: ['Bowler', 'Overs', 'R', 'W', 'Wd', 'NB', 'Eco'] });
-      bowlOrder.forEach(name => {
-        const b = bowlMap[name];
-        if (!b) return;
-        const ov = Math.floor(b.balls / 6),
-          rb = b.balls % 6;
-        const eco = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(2) : '-';
-        rows.push({ type: 'bowl', cols: [name, `${ov}.${rb}`, b.runs, b.wickets, b.wides || 0, b.noballs || 0, eco] });
-      });
-    }
-    
-    if (i1) {
-      const sc1 = `${i1.runs}/${i1.wickets} (${Math.floor(i1.balls/6)}.${i1.balls%6} ov)`;
-      collectBat(i1.bat, `${inn1Team}  ${sc1}`);
-      collectBowl(i1.bowlMap, i1.bowlOrder);
-    }
-    const sc2 = `${m.runs}/${m.wickets} (${Math.floor(m.balls/6)}.${m.balls%6} ov)`;
-    collectBat(m.bat, `${inn2Team}  ${sc2}`);
-    collectBowl(m.bowlMap, m.bowlOrder);
-    
-    // ── রো হাইট হিসাব ──
-    const ROW_H = 26,
-      INN_H = 36,
-      HD_H = 22;
-    let totalH = 120; // hero অংশ
-    rows.forEach(r => {
-      if (r.type === 'inn') totalH += INN_H + 8;
-      else if (r.type === 'hd' || r.type === 'hd2') totalH += HD_H;
-      else totalH += ROW_H;
-    });
-    totalH += 40; // footer
-    
-    const canvas = document.createElement('canvas');
-    canvas.width = W * 2;
-    canvas.height = (totalH + 80) * 2; // 2x for retina
-    const ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
-    const H = totalH + 80;
-    
-    // ── Background ──
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#0d1117');
-    bg.addColorStop(1, '#161b22');
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-    
-    // subtle glow top-left
-    const glow = ctx.createRadialGradient(100, 60, 0, 100, 60, 280);
-    glow.addColorStop(0, 'rgba(21,101,192,0.18)');
-    glow.addColorStop(1, 'rgba(21,101,192,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, W, H);
-    
-    // ── Hero ──
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#f0b429';
-    ctx.font = 'bold 32px Inter, sans-serif';
-    ctx.fillText('🏆', W / 2, 46);
-    
-    ctx.fillStyle = '#e6edf3';
-    ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillText(winnerMsg, W / 2, 78);
-    
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '13px Inter, sans-serif';
-    ctx.fillText(`${s.teamA} vs ${s.teamB}  ·  ${s.overs} Overs`, W / 2, 100);
-    
-    // divider
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(PAD, 114);
-    ctx.lineTo(W - PAD, 114);
-    ctx.stroke();
-    
-    // ── Table rows ──
-    let y = 124;
-    ctx.textAlign = 'left';
-    
-    const COLS_W = [220, 150, 45, 45, 35, 35, 55]; // col widths
-    const COLS_X = [PAD];
-    COLS_W.forEach((w, i) => { if (i < COLS_W.length - 1) COLS_X.push(COLS_X[i] + w); });
-    
-    rows.forEach(r => {
-      if (r.type === 'inn') {
-        y += 8;
-        // pill background
-        ctx.fillStyle = 'rgba(21,101,192,0.12)';
-        roundRect(ctx, PAD - 8, y - 18, W - PAD * 2 + 16, INN_H, 8);
-        ctx.fill();
-        ctx.fillStyle = '#60a5fa';
-        ctx.font = 'bold 14px Inter, sans-serif';
-        ctx.fillText(r.text, PAD, y + 4);
-        y += INN_H + 4;
-      } else if (r.type === 'hd' || r.type === 'hd2') {
-        ctx.fillStyle = '#4a5568';
-        ctx.font = '600 11px Inter, sans-serif';
-        r.cols.forEach((c, i) => {
-          ctx.textAlign = i > 1 ? 'right' : 'left';
-          const cx = i > 1 ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-          ctx.fillText(String(c).toUpperCase(), cx, y + 14);
-        });
-        ctx.textAlign = 'left';
-        y += HD_H;
-        // thin divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.beginPath();
-        ctx.moveTo(PAD, y);
-        ctx.lineTo(W - PAD, y);
-        ctx.stroke();
-      } else {
-        // bat or bowl row
-        const isEven = false;
-        ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.fillRect(PAD - 8, y, W - PAD * 2 + 16, ROW_H);
-        
-        r.cols.forEach((c, i) => {
-          let color = '#e6edf3';
-          if (i === 1) color = '#4a5568'; // dismissal / overs
-          if (i === 2) color = '#22c55e'; // runs
-          if (i === 3 && r.type === 'bowl') color = '#f87171'; // wickets
-          if (i === 4 && r.type === 'bat') color = '#60a5fa'; // 4s
-          if (i === 5 && r.type === 'bat') color = '#f0b429'; // 6s
-          
-          ctx.fillStyle = color;
-          const isNum = i > 1;
-          ctx.textAlign = isNum ? 'right' : 'left';
-          ctx.font = i === 0 ? '500 13px Inter, sans-serif' : '13px Inter, sans-serif';
-          const cx = isNum ? COLS_X[i] + COLS_W[i] : COLS_X[i];
-          ctx.fillText(String(c), cx, y + 18);
-        });
-        ctx.textAlign = 'left';
-        
-        // row divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.beginPath();
-        ctx.moveTo(PAD, y + ROW_H);
-        ctx.lineTo(W - PAD, y + ROW_H);
-        ctx.stroke();
-        y += ROW_H;
-      }
-    });
-    
-    // ── Footer ──
-    y += 16;
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(0, y, W, 1);
-    ctx.fillStyle = '#4a5568';
-    ctx.font = '11px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Cricket Score · Match Summary', W / 2, y + 20);
-    
-    // ── Download ──
-    const link = document.createElement('a');
-    link.download = `${s.teamA}_vs_${s.teamB}_summary.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }
-  
-  // helper: rounded rect (canvas এ নেই পুরনো browser এ)
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
   const snap = JSON.parse(G.match.history.pop());
   const hist = G.match.history;
   Object.assign(G.match, snap);
@@ -816,7 +685,11 @@ function pickDis(btn, type) {
 }
 
 function confirmWicket() {
-  if (!pickedDis) { alert('Select dismissal type'); return; }
+  if (!pickedDis) {
+    shakeModal('wkModal');
+    showToast('Select dismissal type');
+    return;
+  }
   const outIdx = +$('wkBat').value;
   const nsel = $('newBat');
   const newBatIdx = nsel.options.length > 0 ? +nsel.value : null;
@@ -873,7 +746,11 @@ function openBowlerModal() {
 }
 
 function confirmBowler() {
-  if (!pickedBowler) { alert('Select a bowler'); return; }
+  if (!pickedBowler) {
+    shakeModal('bowlerModal');
+    showToast('Select a bowler');
+    return;
+  }
   const m = G.match;
   if (!m.bowlMap[pickedBowler]) {
     const rank = m.bowlOrder.length;
@@ -925,7 +802,7 @@ function startInn2() {
   $('sbTgt').textContent = G.inn1.runs + 1;
   $('innLbl').textContent = '2nd Innings';
   saveState();
-  setTimeout(() => openBowlerModal(), 200);
+  setTimeout(() => openOpeningBatsmenModal(), 200);
 }
 
 function showResult() {
@@ -1286,10 +1163,19 @@ function flash(type) {
 
 // ── RESET ──
 function doReset() {
-  if (!confirm('Reset match? All data will be cleared.')) return;
+  openModal('resetModal');
+}
+
+function doNewMatch() {
+  closeModal('resetModal');
   clearState();
   tierRows = [];
-  G = { screen: 'setup', setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '' }, match: null, inn1: null };
+  G = {
+    screen: 'setup',
+    setup: { team1: '', team2: '', overs: 20, players: 11, team1Names: [], team2Names: [], tiers: [], batFirst: '' },
+    match: null,
+    inn1: null
+  };
   $('inn2Btn').style.display = 'none';
   $('tgtBlk').style.display = 'none';
   $('rrrBlk').style.display = 'none';
@@ -1299,9 +1185,109 @@ function doReset() {
   location.reload();
 }
 
+function doRematch() {
+  closeModal('resetModal');
+  const savedSetup = {
+    team1: G.setup.team1,
+    team2: G.setup.team2,
+    overs: G.setup.overs,
+    players: G.setup.players,
+    team1Names: [...(G.setup.team1Names || [])],
+    team2Names: [...(G.setup.team2Names || [])],
+    tiers: G.setup.tiers ? G.setup.tiers.map(t => ({ ...t })) : [],
+    batFirst: ''
+  };
+  tierRows = savedSetup.tiers.length ? savedSetup.tiers : tierRows;
+  G = {
+    screen: 'setup',
+    setup: savedSetup,
+    match: null,
+    inn1: null
+  };
+  $('inn2Btn').style.display = 'none';
+  $('tgtBlk').style.display = 'none';
+  $('rrrBlk').style.display = 'none';
+  $('innLbl').textContent = '1st Innings';
+  showScreen('setup');
+  initSetup();
+  saveState();
+  location.reload();
+}
 // ═══════════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════════
+
+function openOpeningBatsmenModal() {
+  const m = G.match;
+  const list = $('openingBatList');
+  list.innerHTML = '';
+  G._openingPicks = [];
+  
+  m.bat.forEach((b, i) => {
+    const row = el('div', 'bpl');
+    row.innerHTML = `
+      <div class="bpl-l"><span class="bpl-nm">${b.name}</span></div>
+      <div class="bpl-q" id="bat-role-${i}"></div>`;
+    row.onclick = () => pickOpeningBat(i, row);
+    list.appendChild(row);
+  });
+  
+  openModal('openingBatModal');
+}
+
+function pickOpeningBat(idx, row) {
+  const picks = G._openingPicks;
+  
+  // আগে থেকে select থাকলে deselect
+  const existing = picks.indexOf(idx);
+  if (existing !== -1) {
+    picks.splice(existing, 1);
+    row.classList.remove('sel');
+    row.querySelector('.bpl-q').textContent = '';
+    // label গুলো refresh করো
+    refreshOpeningLabels();
+    return;
+  }
+  
+  if (picks.length >= 2) return; // max 2
+  
+  picks.push(idx);
+  row.classList.add('sel');
+  refreshOpeningLabels();
+}
+
+function refreshOpeningLabels() {
+  const picks = G._openingPicks;
+  
+  document.querySelectorAll('[id^="bat-role-"]').forEach(el => el.textContent = '');
+  if (picks[0] !== undefined)
+    $(`bat-role-${picks[0]}`).textContent = '⚡ Striker';
+  if (picks[1] !== undefined)
+    $(`bat-role-${picks[1]}`).textContent = '🏏 Non-Striker';
+}
+
+function confirmOpeningBat() {
+  const picks = G._openingPicks;
+  if (picks.length < 2) {
+    shakeModal('openingBatModal');
+    showToast('Select Striker and Non-Striker');
+    return;
+  }
+  const m = G.match;
+  m.striker = picks[0];
+  m.nonStriker = picks[1];
+  
+  m.bat.forEach((b, i) => {
+    b.notYet = (i !== picks[0] && i !== picks[1]);
+  });
+  m.nextBat = m.bat.findIndex((b, i) => b.notYet && i !== picks[0] && i !== picks[1]);
+  if (m.nextBat === -1) m.nextBat = 2;
+  m.needBatsmen = false;
+  closeModal('openingBatModal');
+  renderAll();
+  setTimeout(() => openBowlerModal(), 200);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   
   $('totalOvers').addEventListener('input', onMatchChange);
@@ -1327,26 +1313,24 @@ document.addEventListener('DOMContentLoaded', () => {
         $('sbTgt').textContent = G.inn1.runs + 1;
         $('innLbl').textContent = '2nd Innings';
       }
-      if (G.match.needBowler && !G.match.done) openBowlerModal();
+      if (G.match.needBatsmen && !G.match.done) {
+        openOpeningBatsmenModal();
+      } else if (G.match.needBowler && !G.match.done) {
+        openBowlerModal();
+      }
       return;
     }
   }
   
   initSetup();
 });
+
 async function loadFonts() {
-  const rajdhani = new FontFace(
-    'Rajdhani',
-    'url(https://fonts.gstatic.com/s/rajdhani/v16/LDI2apCSOBg7S-QT7pb4JNnFqg.woff2)',
-    { weight: '700' }
-  );
-  const montserrat = new FontFace(
-    'Montserrat',
-    'url(https://fonts.gstatic.com/s/montserrat/v29/JTUSjIg1_i6t8kCHKm459Wlhyw.woff2)',
-    { weight: '600' }
-  );
-  const loaded = await Promise.all([rajdhani.load(), montserrat.load()]);
-  loaded.forEach(f => document.fonts.add(f));
+  try {
+    await document.fonts.load('bold 12px Rajdhani');
+    await document.fonts.load('600 12px Montserrat');
+    await document.fonts.ready;
+  } catch (e) { console.error(e); }
 }
 
 async function downloadSummary() {
@@ -1467,6 +1451,9 @@ async function downloadSummary() {
     logoY = (HDR_H - LOGO_H) / 2;
   let logoDrawW = LOGO_H; // default — বাইরে declare
   
+  const brandBlockH = 42;
+  const brandBlockY = (HDR_H - brandBlockH) / 2 + 5;
+  
   if (logoImg.complete && logoImg.naturalWidth > 0) {
     const ratio = logoImg.naturalWidth / logoImg.naturalHeight;
     logoDrawW = LOGO_H * ratio;
@@ -1493,56 +1480,52 @@ async function downloadSummary() {
   ctx.textAlign = 'left';
   
   // "CRICKET SCORE" — Rajdhani bold italic style
-  ctx.font = 'bold italic 26px Rajdhani, sans-serif';
+  ctx.font = 'bold italic 32px Rajdhani, sans-serif';
   ctx.fillStyle = '#1565C0';
-  ctx.fillText('CRICKET', tx, logoY + 24);
+  ctx.fillText('CRICKET', tx, brandBlockY + 18);
   const cW = ctx.measureText('CRICKET ').width;
   ctx.fillStyle = '#D32F2F';
-  ctx.fillText('SCORE', tx + cW, logoY + 24);
+  ctx.fillText('SCORE', tx + cW, brandBlockY + 18);
   
   // tagline wrapper — CSS এর মতো: line + text + line
   // tagline wrapper
   const tagText = 'CRICKET SCORING TOOL';
-  ctx.font = '600 7.5px Montserrat, sans-serif';
-  ctx.letterSpacing = '0px'; // reset করো আগে
-  const tagW = ctx.measureText(tagText).width;
-  const tagY = logoY + 41;
+  const tagY = brandBlockY + 34;
   const lineH = 1.5;
   const lineW = 18;
   const gap = 6;
-  const lineVertical = tagY - 4; // text baseline থেকে উপরে — vertically center
+  const lineVertical = tagY - 4;
   
-// "CRICKET SCORE" এর total width measure করো
-ctx.font = 'bold italic 26px Inter, sans-serif';
-const cricketW = ctx.measureText('CRICKET ').width;
-const scoreW = ctx.measureText('SCORE').width;
-const brandTotalW = cricketW + scoreW;
-const brandCenterX = tx + brandTotalW / 2;
-
-// tagline total width (line + gap + text + gap + line)
-const totalTaglineW = lineW + gap + tagW + gap + lineW;
-const taglineStartX = brandCenterX - totalTaglineW / 2;
-
-ctx.font = '600 7.5px Montserrat, sans-serif';
-
-// বাম line — নীল
-ctx.fillStyle = '#1565C0';
-ctx.fillRect(taglineStartX, lineVertical, lineW, lineH);
-
-// tagline text
-ctx.fillStyle = '#8b949e';
-(function(text, x, y) {
-  let curX = x;
-  for (const ch of text) {
-    ctx.fillText(ch, curX, y);
+  // brandCenterX বের করো Rajdhani দিয়ে
+  ctx.font = 'bold italic 32px Rajdhani, sans-serif';
+  const brandCenterX = tx + (ctx.measureText('CRICKET ').width + ctx.measureText('SCORE').width) / 2;
+  
+  // actual tagline width বের করো — loop এর মতো করেই measure করো
+  ctx.font = '600 7.5px Montserrat, sans-serif';
+  let actualTagW = 0;
+  for (const ch of tagText) {
+    actualTagW += ctx.measureText(ch).width + 3.5;
+  }
+  actualTagW -= 3.5; // শেষ character এর পরে extra spacing নেই
+  
+  const totalTaglineW = lineW + gap + actualTagW + gap + lineW;
+  const taglineStartX = brandCenterX - totalTaglineW / 2;
+  
+  // বাম line — নীল
+  ctx.fillStyle = '#1565C0';
+  ctx.fillRect(taglineStartX, lineVertical, lineW, lineH);
+  
+  // tagline text
+  ctx.fillStyle = '#8b949e';
+  let curX = taglineStartX + lineW + gap;
+  for (const ch of tagText) {
+    ctx.fillText(ch, curX, tagY);
     curX += ctx.measureText(ch).width + 3.5;
   }
-})(tagText, taglineStartX + lineW + gap, tagY);
-
-// ডান line — লাল
-ctx.fillStyle = '#D32F2F';
-ctx.fillRect(taglineStartX + lineW + gap + tagW + gap, lineVertical, lineW, lineH);
   
+  // ডান line — লাল (exact position)
+  ctx.fillStyle = '#D32F2F';
+  ctx.fillRect(taglineStartX + lineW + gap + actualTagW + gap, lineVertical, lineW, lineH);
   // ── QR — right side of header ──
   const QR_SIZE = 54;
   const qrX = W - PAD - QR_SIZE;
@@ -1573,7 +1556,10 @@ ctx.fillRect(taglineStartX + lineW + gap + tagW + gap, lineVertical, lineW, line
         correctLevel: QRCode.CorrectLevel.M
       });
       setTimeout(resolve, 200);
-    } catch (e) { resolve(); }
+    } catch (e) {
+      console.error('QR Error:', e);
+      resolve();
+    }
   });
   
   const qrEl = qrHolder.querySelector('canvas') || qrHolder.querySelector('img');
@@ -1608,7 +1594,7 @@ ctx.fillRect(taglineStartX + lineW + gap + tagW + gap, lineVertical, lineW, line
   y += 46;
   
   ctx.fillStyle = '#e6edf3';
-  ctx.font = 'bold 26px Inter, sans-serif';
+  ctx.font = 'bold 28px inter, sans-serif';
   ctx.fillText(winnerMsg, W / 2, y + 26);
   y += 36;
   
