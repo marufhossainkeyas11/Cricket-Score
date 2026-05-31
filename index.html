@@ -85,6 +85,17 @@
             <div class="step-hd">04 · TEAM 2 PLAYERS</div>
             <div class="pgrid" id="bowlGrid"></div>
           </div>
+
+          <div class="step">
+            <div class="step-hd">05 · MATCH RULES</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+              <input type="checkbox" id="byeAllowedToggle" checked style="width:16px;height:16px;accent-color:var(--blue2)">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Allow Bye & Leg Bye runs</div>
+                <div style="font-size:11px;color:var(--t2);margin-top:2px">Disable for local matches that don't count bye runs</div>
+              </div>
+            </div>
+          </div>
           
           <!-- Toss note -->
           <div class="toss-note">🪙 You'll pick who bats first on the next screen</div>
@@ -173,6 +184,31 @@
           </div>
         </div>
       </div>
+
+            <!-- EXTRA RUNS MODAL -->
+      <div id="extraModal" class="modal-bg" style="display:none">
+        <div class="modal">
+          <div class="modal-ttl" id="extraModalTitle">Extra</div>
+          <div class="bowler-info" id="extraModalInfo"></div>
+          
+          <div style="margin-bottom:14px">
+            <div class="mf" id="extraBatRunFld" style="display:none">
+              <label>Bat Runs</label>
+              <div class="dis-grid" id="extraBatRunGrid"></div>
+            </div>
+            
+            <div class="mf" style="margin-top:10px">
+              <label id="extraRunLabel">Total Runs</label>
+              <div class="dis-grid" id="extraRunGrid"></div>
+            </div>
+          </div>
+          
+          <div class="mact">
+            <button class="mbtn-c" onclick="closeModal('extraModal')">Cancel</button>
+            <button class="mbtn-ok" onclick="confirmExtra()">Confirm</button>
+          </div>
+        </div>
+      </div>
       
       <div class="sec">
         <div class="sec-hd"><span class="sec-ttl">Score</span></div>
@@ -185,12 +221,10 @@
           <button class="rb six" onclick="ball(6,null)">6</button>
         </div>
         <div class="ext-grid">
-          <button class="eb wd" onclick="ball(1,'wide')">Wide +1</button>
-          <button class="eb wd" onclick="ball(2,'wide')">Wide +2</button>
-          <button class="eb nb" onclick="ball(1,'noball')">No Ball</button>
-          <button class="eb nb" onclick="ball(2,'noball')">NB +2</button>
-          <button class="eb bye" onclick="ball(1,'bye')">Bye</button>
-          <button class="eb bye" onclick="ball(1,'legbye')">Leg Bye</button>
+          <button class="eb wd" onclick="showExtraModal('wide')">Wide</button>
+          <button class="eb nb" onclick="showExtraModal('noball')">No Ball</button>
+          <button class="eb bye" onclick="showExtraModal('bye')">Bye</button>
+          <button class="eb bye" onclick="showExtraModal('legbye')">Leg Bye</button>
         </div>
         <div class="act-grid">
           <button class="wk-btn" onclick="showWicketModal()">🔴 WICKET</button>
