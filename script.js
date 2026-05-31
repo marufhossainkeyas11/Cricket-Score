@@ -261,6 +261,167 @@ function maxOvForRank(rank) {
 }
 
 // ═══════════════════════════════════════════════
+//  EDIT PLAYERS MODAL
+// ═══════════════════════════════════════════════
+
+function showEditPlayersModal() {
+  const m = G.match;
+  const s = G.setup;
+  if (!m || m.done) return;
+  
+  let html = `<div id="editPlayersModal" class="modal-bg" style="display:flex">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-ttl" style="margin-bottom:14px;font-size: 20 px;font-weight: 500;letter-spacing: 2 px;text-transform: uppercase;color:var (--t3)">Edit Players
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="26" height="26" fill="currentColor" style="transform: translateY(4px)">
+              <path d="M480-240Zm-320 80v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q37 0 73 4.5t72 14.5l-67 68q-20-3-39-5t-39-2q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32h240v80H160Zm400 40v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T903-340L683-120H560Zm300-263-37-37 37 37ZM620-180h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19ZM367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm169.5-56.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Z" />
+            </svg>
+      </div>`;
+  
+  // ── BOWLER SECTION ──
+  const curBowler = m.curBowler;
+  if (curBowler) {
+    const availBowlers = m.bowlNames.filter(n => n !== curBowler);
+    if (availBowlers.length > 0) {
+      html += `
+        <div class="ep-section">
+          <div class="ep-label">Current Bowler</div>
+          <div class="ep-row">
+            <div class="ep-name">${curBowler}</div>
+            <span class="ep-arrow">⇄</span>
+            <select class="ep-select" id="epBowlerSwap">
+              <option value="${curBowler}">${curBowler}</option>
+              ${availBowlers.map(n => `<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <button class="ep-apply-btn" onclick="applyBowlerSwap()">Apply Bowler Change</button>
+        </div>`;
+    }
+  }
+  
+  // ── BATTER SECTION ──
+  
+  const wicketsFallen = m.wickets;
+  const editableBatters = [];
+  
+  if (wicketsFallen === 0) {
+    editableBatters.push({ idx: m.striker, role: 'Striker' });
+    editableBatters.push({ idx: m.nonStriker, role: 'Non-Striker' });
+  } else {
+    const newerIdx = m.lastNewBatIdx ?? m.striker;
+    editableBatters.push({ idx: newerIdx, role: 'New Batsman' });
+  }
+  
+  const batNames = s.batFirst === s.team1 ? s.team1Names : s.team2Names;
+  // যারা এখনো ব্যাট করেনি বা আউট হয়নি তারা
+  const availBatPool = batNames.filter((n, i) => {
+    const batObj = m.bat.find(b => b.name === n);
+    if (!batObj) return false;
+    return !batObj.out;
+  });
+  
+  if (editableBatters.length > 0) {
+    html += `<div class="ep-section" style="margin-top:14px">
+      <div class="ep-label">Batters</div>`;
+    
+    editableBatters.forEach(({ idx, role }) => {
+      const bat = m.bat[idx];
+      if (!bat) return;
+      const others = availBatPool.filter(n => n !== bat.name);
+      if (others.length === 0) return;
+      html += `
+        <div class="ep-row" style="margin-bottom:8px">
+          <div style="display:flex;flex-direction:column;gap:2px;flex:1">
+            <span style="font-size:10px;color:var(--t3)">${role}</span>
+            <div class="ep-name">${bat.name}</div>
+          </div>
+          <span class="ep-arrow">⇄</span>
+          <select class="ep-select" id="epBatSwap_${idx}">
+            <option value="${bat.name}">${bat.name}</option>
+            ${others.map(n => `<option value="${n}">${n}</option>`).join('')}
+          </select>
+        </div>`;
+    });
+    
+    html += `<button class="ep-apply-btn" onclick="applyBatterSwap()">Apply Batter Change</button>
+    </div>`;
+  }
+  
+  html += `
+      <div class="mact" style="margin-top:16px">
+        <button class="mbtn-c" onclick="document.getElementById('editPlayersModal').remove()">Close</button>
+      </div>
+    </div>
+  </div>`;
+  
+  // পুরনো modal থাকলে সরাও
+  const old = document.getElementById('editPlayersModal');
+  if (old) old.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function applyBowlerSwap() {
+  const m = G.match;
+  const sel = document.getElementById('epBowlerSwap');
+  const newName = sel?.value;
+  if (!newName) { showToast('Select a bowler to swap with'); return; }
+  
+  const oldName = m.curBowler;
+  
+  if (m.bowlMap[oldName]) {
+    m.bowlMap[newName] = { ...m.bowlMap[oldName] };
+    delete m.bowlMap[oldName];
+  }
+  
+  const orderIdx = m.bowlOrder.indexOf(oldName);
+  if (orderIdx !== -1) m.bowlOrder[orderIdx] = newName;
+  
+  
+  m.curBowler = newName;
+  if (m.prevBowler === newName) m.prevBowler = oldName;
+  
+  document.getElementById('editPlayersModal').remove();
+  showToast(`Bowler changed: ${oldName} to ${newName}`, true);
+  renderAll();
+  saveState();
+}
+
+function applyBatterSwap() {
+  const m = G.match;
+  let changed = [];
+  
+  const sel1 = document.getElementById(`epBatSwap_${m.striker}`)?.value;
+  const sel2 = document.getElementById(`epBatSwap_${m.nonStriker}`)?.value;
+  if (sel1 && sel2 && sel1 === sel2) {
+    showToast('Striker & Non-Striker cannot be the same player');
+    return;
+  }
+  
+  [m.striker, m.nonStriker].forEach(idx => {
+    const sel = document.getElementById(`epBatSwap_${idx}`);
+    if (!sel || !sel.value) return;
+    
+    const oldName = m.bat[idx].name;
+    const newName = sel.value;
+    if (oldName === newName) return;
+    
+    m.bat[idx].name = newName;
+    
+    const swapIdx = m.bat.findIndex(b => b.name === newName && b.notYet);
+    if (swapIdx !== -1) m.bat[swapIdx].name = oldName;
+    
+    changed.push(`${oldName} to ${newName}`);
+  });
+  
+  if (!changed.length) { showToast('Select a batter to swap'); return; }
+  
+  document.getElementById('editPlayersModal').remove();
+  showToast(changed.join(' / '), true);
+  renderAll();
+  saveState();
+}
+
+
+// ═══════════════════════════════════════════════
 //  START MATCH — FIX 1: Show toss modal first
 // ═══════════════════════════════════════════════
 
@@ -487,7 +648,7 @@ function wicketBall(outIdx, howOut, newBatIdx) {
     if (m.striker === outIdx) m.striker = newBatIdx;
     else m.nonStriker = newBatIdx;
   }
-  
+  m.lastNewBatIdx = newBatIdx; // নতুন ব্যাটসম্যান ট্র্যাক
   flash('r');
   checkOverDone();
   checkInningsDone();
@@ -549,12 +710,16 @@ function checkInningsDone() {
   }
 }
 
-function showToast(msg) {
+function showToast(msg, isSuccess = false) {
   const t = $('toast');
   t.textContent = msg;
+  if (isSuccess) t.classList.add('toast-success');
   t.classList.add('show');
   clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.classList.remove('show'), 2500);
+  t._tid = setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.classList.remove('toast-success'), 200); // transition শেষ হওয়ার পর
+  }, 2500);
 }
 
 function shakeModal(modalId) {
