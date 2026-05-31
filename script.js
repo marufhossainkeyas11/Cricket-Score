@@ -94,13 +94,24 @@ function buildPlayerGrids(count) {
     const grid = $(id);
     grid.innerHTML = '';
     for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'player-row';
+
+      const num = document.createElement('div');
+      num.className = 'player-num';
+      num.textContent = String(i + 1).padStart(2, '0');
+
       const inp = document.createElement('input');
       inp.type = 'text';
       inp.id = `pn_${side}_${i}`;
-      inp.placeholder = `Player ${i+1}`;
+      inp.placeholder = `Player ${i + 1}`;
       inp.maxLength = 18;
       inp.value = side === 0 ? (G.setup.team1Names[i] || '') : (G.setup.team2Names[i] || '');
-      grid.appendChild(inp);
+      inp.className = 'player-inp';
+
+      row.appendChild(num);
+      row.appendChild(inp);
+      grid.appendChild(row);
     }
   });
 }
