@@ -342,7 +342,7 @@ button {
   line-height: 1
 }
 
-.tier-del:hover {
+.tier-del:active {
   color: var(--red2)
 }
 
@@ -359,7 +359,7 @@ button {
   transition: all .2s
 }
 
-.add-tier-btn:hover {
+.add-tier-btn:active {
   border-color: var(--blue2);
   color: var(--blue2)
 }
@@ -425,7 +425,7 @@ button {
   box-shadow: 0 8px 24px rgba(21, 101, 192, .35)
 }
 
-.start-btn:hover {
+.start-btn:active {
   transform: translateY(-2px);
   opacity: .9
 }
@@ -496,12 +496,12 @@ button {
   gap: 4px;
 }
 
-.hbtn:hover {
+.hbtn:active {
   border-color: var(--blue2);
   color: var(--text)
 }
 
-.hbtn.red:hover {
+.hbtn.red:active {
   border-color: var(--red);
   color: var(--red)
 }
@@ -734,6 +734,13 @@ button {
   color: var(--t3)
 }
 
+.ext-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 7px;
+  margin-bottom: 9px;
+}
+
 .over-info {
   font-family: var(--m);
   font-size: 11px;
@@ -846,7 +853,7 @@ button {
   text-transform: uppercase
 }
 
-.rb:hover {
+.rb:active {
   border-color: var(--blue2);
   transform: translateY(-2px)
 }
@@ -864,7 +871,7 @@ button {
   color: #60a5fa
 }
 
-.rb.four:hover {
+.rb.four:active {
   background: rgba(21, 101, 192, .1)
 }
 
@@ -873,7 +880,7 @@ button {
   color: var(--ylw)
 }
 
-.rb.six:hover {
+.rb.six:active {
   background: rgba(240, 180, 41, .08)
 }
 
@@ -896,19 +903,19 @@ button {
   transition: all .12s
 }
 
-.eb.wd:hover {
+.eb.wd:active {
   background: rgba(229, 57, 53, .1);
   border-color: #ef4444;
   color: #f87171
 }
 
-.eb.nb:hover {
+.eb.nb:active {
   background: rgba(240, 180, 41, .1);
   border-color: var(--ylw);
   color: var(--ylw)
 }
 
-.eb.bye:hover {
+.eb.bye:active {
   background: rgba(139, 148, 158, .1);
   border-color: var(--t2);
   color: var(--text)
@@ -932,7 +939,7 @@ button {
   transition: all .15s
 }
 
-.wk-btn:hover {
+.wk-btn:active {
   background: rgba(229, 57, 53, .18);
   border-color: #ef4444;
   transform: translateY(-2px)
@@ -950,7 +957,7 @@ button {
   transition: all .15s
 }
 
-.undo-btn:hover {
+.undo-btn:active {
   border-color: var(--t2);
   color: var(--text)
 }
@@ -1015,7 +1022,7 @@ button {
   transition: all .2s
 }
 
-.sc-toggle:hover {
+.sc-toggle:active {
   border-color: var(--blue2);
   color: var(--text)
 }
@@ -1058,7 +1065,7 @@ button {
   top: -1px;              /* optical correction — SVG সামান্য উপরে থাকে */
 }
 
-.sc-toggle:hover {
+.sc-toggle:active {
   border-color: var(--blue2);
   color: var(--text);
 }
@@ -1217,7 +1224,7 @@ button {
   transition: all .12s
 }
 
-.db:hover,
+.db:active,
 .db.sel {
   background: rgba(229, 57, 53, .1);
   border-color: var(--red2);
@@ -1253,7 +1260,7 @@ button {
   transition: opacity .2s
 }
 
-.mbtn-ok:hover {
+.mbtn-ok:active {
   opacity: .85
 }
 
@@ -1286,7 +1293,7 @@ button {
   cursor: pointer
 }
 
-.bpl:not(.off):hover {
+.bpl:not(.off):active {
   border-color: var(--grn)
 }
 
@@ -1612,7 +1619,7 @@ button {
   color: var(--t2);
 }
 
-.rs-btn-cancel:hover {
+.rs-btn-cancel:active {
   border-color: var(--t2);
   color: var(--text);
 }
@@ -1840,11 +1847,11 @@ button {
   transition: all .15s;
 }
 
-.reset-opt:hover {
+.reset-opt:active {
   border-color: var(--blue2);
 }
 
-.reset-opt.danger:hover {
+.reset-opt.danger:active {
   border-color: var(--red2);
 }
 
@@ -1927,7 +1934,28 @@ button {
   transition: all .15s;
 }
 
-.ep-apply-btn:hover {
+.ep-apply-btn:active {
   background: rgba(21, 101, 192, 0.25);
   border-color: var(--blue2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tier-del:hover { color: var(--red2) }
+  .add-tier-btn:hover { border-color: var(--blue2); color: var(--blue2) }
+  .start-btn:hover { transform: translateY(-2px); opacity: .9 }
+  .hbtn:hover { border-color: var(--blue2); color: var(--text) }
+  .hbtn.red:hover { border-color: var(--red); color: var(--red) }
+  .rb:hover { border-color: var(--blue2); transform: translateY(-2px) }
+  .eb.wd:hover { background: rgba(229,57,53,.1); border-color: #ef4444; color: #f87171 }
+  .eb.nb:hover { background: rgba(240,180,41,.1); border-color: var(--ylw); color: var(--ylw) }
+  .eb.bye:hover { background: rgba(139,148,158,.1); border-color: var(--t2); color: var(--text) }
+  .wk-btn:hover { background: rgba(229,57,53,.18); border-color: #ef4444; transform: translateY(-2px) }
+  .undo-btn:hover { border-color: var(--t2); color: var(--text) }
+  .sc-toggle:hover { border-color: var(--blue2); color: var(--text) }
+  .reset-opt:hover { border-color: var(--blue2) }
+  .reset-opt.danger:hover { border-color: var(--red2) }
+  .rs-btn-cancel:hover { border-color: var(--t2); color: var(--text) }
+  .ep-apply-btn:hover { background: rgba(21,101,192,.25); border-color: var(--blue2) }
+  .mbtn-ok:hover { opacity: .85 }
+  .bpl:not(.off):hover { border-color: var(--grn) }
 }
