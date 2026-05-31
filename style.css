@@ -1818,6 +1818,12 @@ button {
   pointer-events: none;
 }
 
+.toast.toast-success {
+  background: #1e2736;
+  border: 1px solid rgba(21, 101, 192, 0.4);
+  color: #60a5fa;
+}
+
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
@@ -1852,4 +1858,76 @@ button {
 .reset-opt-sub {
   font-size: 11px;
   color: var(--t2);
+}
+
+/* ── EDIT PLAYERS MODAL ── */
+.ep-section {
+  background: var(--bg3);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  padding: 12px 14px;
+}
+
+.ep-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--blue2);
+  margin-bottom: 10px;
+}
+
+.ep-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ep-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ep-arrow {
+  font-size: 16px;
+  color: var(--t3);
+  flex-shrink: 0;
+}
+
+.ep-select {
+  flex: 1.2;
+  background: var(--sf2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  color: var(--text);
+  font-family: var(--f);
+  font-size: 13px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.ep-apply-btn {
+  width: 100%;
+  margin-top: 12px;
+  background: rgba(21, 101, 192, 0.15);
+  border: 1px solid rgba(21, 101, 192, 0.4);
+  border-radius: var(--rs);
+  color: #60a5fa;
+  font-family: var(--f);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.ep-apply-btn:hover {
+  background: rgba(21, 101, 192, 0.25);
+  border-color: var(--blue2);
 }
