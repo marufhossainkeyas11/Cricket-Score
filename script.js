@@ -1299,7 +1299,8 @@ function renderBowlFigs() {
     const ov = Math.floor(b.balls / 6),
       rb = b.balls % 6;
     const econ = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(1) : '—';
-    const left = b.maxOv - ov;
+    const maxOv = b.maxOv !== null ? b.maxOv : getMaxOvForBowler(name, m);
+    const left = maxOv - ov;
     const row = el('div', 'bfr');
     row.innerHTML = `
       <div class="bfr-nm ${name===m.curBowler?'cur':''}">${name}</div>
