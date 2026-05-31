@@ -716,8 +716,7 @@ function openBowlerModal() {
   m.bowlNames.forEach((name, idx) => {
     const b = m.bowlMap[name];
     const bowled = b ? Math.floor(b.balls / 6) : 0;
-    const rank = b ? b.rank : m.bowlOrder.length;
-    const maxOv = b ? b.maxOv : maxOvForRank(rank);
+    const maxOv = b ? getMaxOvForBowler(name, m) : getTierMaxOv(m);
     const full = b && bowled >= maxOv;
     const consec = name === m.prevBowler;
     const off = full || consec;
@@ -753,9 +752,11 @@ function confirmBowler() {
   }
   const m = G.match;
   if (!m.bowlMap[pickedBowler]) {
-    const rank = m.bowlOrder.length;
-    const maxOv = maxOvForRank(rank);
-    m.bowlMap[pickedBowler] = { balls: 0, runs: 0, wickets: 0, wides: 0, noballs: 0, rank, maxOv };
+    m.bowlMap[pickedBowler] = { 
+      balls: 0, runs: 0, wickets: 0, wides: 0, noballs: 0, 
+      rank: m.bowlOrder.length, 
+      maxOv: null
+    };
     m.bowlOrder.push(pickedBowler);
   }
   m.curBowler = pickedBowler;
@@ -763,6 +764,34 @@ function confirmBowler() {
   closeModal('bowlerModal');
   renderAll();
   saveState();
+}
+
+function getMaxOvForBowler(name, m) {
+  const tiers = G.setup.tiers;
+  const b = m.bowlMap[name];
+  const bowled = b ? Math.floor(b.balls / 6) : 0;
+
+  if (b && b.maxOv !== null) return b.maxOv;
+
+  return getTierMaxOv(m);
+}
+
+function getTierMaxOv(m) {
+  const tiers = G.setup.tiers;
+  const bowlMap = m.bowlMap;
+
+  for (const t of tiers) {
+    if (t.isRest) return t.maxOv; 
+    
+    const usedInTier = Object.values(bowlMap).filter(
+      b => b.maxOv === t.maxOv && Math.floor(b.balls / 6) > 0
+    ).length;
+    
+    if (usedInTier < t.count) return t.maxOv;
+  }
+
+  // fallback
+  return tiers[tiers.length - 1]?.maxOv || 4;
 }
 
 // ═══════════════════════════════════════════════
