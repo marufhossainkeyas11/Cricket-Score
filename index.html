@@ -53,26 +53,43 @@
         
         <div class="card">
           
+          
           <!-- STEP 1 -->
           <div class="step">
             <div class="step-hd">01 · MATCH SETUP</div>
-            <div class="row2">
-              <div class="fg"><label>Team 1</label><input id="teamA" type="text" placeholder="Team A" maxlength="20" /></div>
+            
+            <div class="team-row">
+              <div class="fg">
+                <label>Team 1</label>
+                <input id="teamA" type="text" placeholder="Team A" maxlength="20" />
+              </div>
               <div class="vs">VS</div>
-              <div class="fg"><label>Team 2</label><input id="teamB" type="text" placeholder="Team B" maxlength="20" /></div>
+              <div class="fg">
+                <label>Team 2</label>
+                <input id="teamB" type="text" placeholder="Team B" maxlength="20" />
+              </div>
             </div>
-            <div class="row2 mt8">
-              <div class="fg"><label>Total Overs</label><input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" /></div>
-              <div class="fg"><label>Players per Side</label><input id="playerCount" type="number" value="11" min="2" max="11" oninput="onMatchChange()" /></div>
+            
+            <div class="match-meta-row">
+              <div class="meta-field">
+                <label>Overs</label>
+                <input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" />
+              </div>
+              <div class="meta-divider"></div>
+              <div class="meta-field">
+                <label>Players / Side</label>
+                <input id="playerCount" type="number" value="11" min="2" max="11" oninput="onMatchChange()" />
+              </div>
             </div>
           </div>
-          
           <!-- STEP 2 -->
           <div class="step">
             <div class="step-hd">02 · BOWLING OVER LIMITS</div>
             <div class="limit-info" id="limitInfo"></div>
-            <div id="tierList"></div>
-            <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">+ Add Next Limit Tier</button>
+            <div class="tier-list" id="tierList"></div>
+            <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">
+              <span class="add-tier-icon">+</span> Add Limit Tier
+            </button>
             <div class="feasibility" id="feasibility"></div>
           </div>
           
@@ -96,9 +113,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- Toss note -->
-          <div class="toss-note">🪙 You'll pick who bats first on the next screen</div>
           
           <button class="start-btn" onclick="startMatch()">🏏 Start Match</button>
         </div>
