@@ -76,17 +76,21 @@ function teamCode(name) {
 // ═══════════════════════════════════════════════
 
 function initSetup() {
-  if (G.setup.overs)   $('totalOvers').value  = G.setup.overs;
+  if (G.setup.overs) $('totalOvers').value = G.setup.overs;
   if (G.setup.players) $('playerCount').value = G.setup.players;
-  if (G.setup.team1)   $('teamA').value        = G.setup.team1;
-  if (G.setup.team2)   $('teamB').value        = G.setup.team2;
-
+  if (G.setup.team1) $('teamA').value = G.setup.team1;
+  if (G.setup.team2) $('teamB').value = G.setup.team2;
+  
   const ov = +$('totalOvers').value || 20;
   const pl = +$('playerCount').value || 11;
   buildPlayerGrids(pl);
   if (tierRows.length === 0) buildDefaultTier(ov, pl);
   renderTiers();
   updateLimitInfo();
+  autoSetLastMan(pl);
+  if (G.setup.lastMan !== undefined) {
+    $('lastManToggle').checked = G.setup.lastMan;
+  }
 }
 
 function onMatchChange() {
@@ -96,6 +100,15 @@ function onMatchChange() {
   buildDefaultTier(ov, pl);
   renderTiers();
   updateLimitInfo();
+  autoSetLastMan(pl);
+}
+
+function autoSetLastMan(pl) {
+  const toggle = $('lastManToggle');
+  if (!toggle) return;
+  if (pl <= 5) {
+    toggle.checked = true;
+  }
 }
 
 function buildPlayerGrids(count) {
@@ -430,6 +443,7 @@ function startMatch() {
     tiers: tierRows.map(t => ({ ...t })),
     batFirst: '',
     byeAllowed: $('byeAllowedToggle').checked,
+    lastMan: $('lastManToggle').checked,
   };
   G.inn1 = null;
   showTossModal();
@@ -542,27 +556,44 @@ function initMatch(innings) {
 function ball(runs, extra) {
   const m = G.match;
   if (!m || m.done || m.needBowler || m.needBatsmen) return;
-
+  
+  const isLastMan = isLastManAlone();
+  
+  if (isLastMan && !extra && runs !== 4 && runs !== 6) {
+    const isLegal = true;
+    saveSnap();
+    m.bat[m.striker].balls++;
+    addBowlerBall(0, true, null);
+    m.balls++;
+    m.curOver.push({ runs: 0, extra: null, isLegal: true, isW: false });
+    flash('');
+    checkOverDone();
+    checkInningsDone();
+    renderAll();
+    saveState();
+    return;
+  }
+  
   const isLegal = extra !== 'wide' && extra !== 'noball';
   saveSnap();
-
+  
   m.runs += runs;
   if (extra) m.extras[extra] = (m.extras[extra] || 0) + 1;
-
+  
   if (!extra || extra === 'noball') {
-    m.bat[m.striker].runs  += runs;
+    m.bat[m.striker].runs += runs;
     m.bat[m.striker].fours += runs === 4 ? 1 : 0;
     m.bat[m.striker].sixes += runs === 6 ? 1 : 0;
   }
   if (isLegal) m.bat[m.striker].balls++;
-
+  
   addBowlerBall(runs, isLegal, extra);
   if (isLegal) m.balls++;
-  if (isLegal && runs % 2 === 1) swapBat();
-
+  if (isLegal && runs % 2 === 1 && !isLastMan) swapBat();
+  
   m.curOver.push({ runs, extra, isLegal, isW: false });
   flash(runs >= 4 ? 'g' : (extra ? 'r' : ''));
-
+  
   if (isLegal) checkOverDone();
   checkInningsDone();
   renderAll();
@@ -572,26 +603,37 @@ function ball(runs, extra) {
 function wicketBall(outIdx, howOut, newBatIdx) {
   const m = G.match;
   saveSnap();
-
-  m.bat[outIdx].out    = true;
+  
+  m.bat[outIdx].out = true;
   m.bat[outIdx].howOut = howOut;
   m.bat[outIdx].balls++;
   m.wickets++;
-
+  
   if (howOut !== 'Run Out' && m.curBowler)
     m.bowlMap[m.curBowler].wickets++;
-
+  
   addBowlerBall(0, true, null);
   m.balls++;
   m.curOver.push({ runs: 0, extra: null, isLegal: true, isW: true });
-
+  
   if (newBatIdx !== null) {
     m.bat[newBatIdx].notYet = false;
-    if (m.striker === outIdx) m.striker = newBatIdx;
-    else m.nonStriker = newBatIdx;
+    if (m.striker === outIdx) {
+      m.striker = newBatIdx;
+    } else {
+      m.nonStriker = newBatIdx;
+    }
+  } else {
+    // নতুন ব্যাটসম্যান নেই
+    if (m.striker === outIdx) {
+      m.striker = m.nonStriker;
+      m.nonStriker = -1; // কেউ নেই
+    } else {
+      m.nonStriker = -1;
+    }
   }
   m.lastNewBatIdx = newBatIdx;
-
+  
   flash('r');
   checkOverDone();
   checkInningsDone();
@@ -615,23 +657,30 @@ function swapBat() {
   m.nonStriker = t;
 }
 
+function isLastManAlone() {
+  const m = G.match;
+  if (!G.setup.lastMan) return false;
+  return m && m.nonStriker === -1;
+}
+
 function checkOverDone() {
   const m = G.match;
   if (m.balls > 0 && m.balls % 6 === 0) {
     m.doneOvers.push([...m.curOver]);
-    m.curOver      = [];
-    m.prevBowler   = m.curBowler;
-    m.curBowler    = null;
-    m.needBowler   = true;
-    swapBat();
+    m.curOver = [];
+    m.prevBowler = m.curBowler;
+    m.curBowler = null;
+    m.needBowler = true;
+    if (!isLastManAlone()) swapBat(); // লাস্ট ম্যান একা থাকলে swap না
     if (!m.done) setTimeout(() => { if (!G.match.done) openBowlerModal(); }, 250);
   }
 }
 
 function checkInningsDone() {
   const m = G.match, s = G.setup;
-  const allOut    = m.wickets >= s.players - 1;
-  const oversDone = m.balls   >= s.overs * 6;
+  const lastManMode = s.lastMan && m.nonStriker === -1 && m.bat[m.striker]?.out;
+  const allOut = s.lastMan ?  (m.nonStriker === -1 && m.bat[m.striker]?.out) :  (m.wickets >= s.players - 1);
+  const oversDone   = m.balls >= s.overs * 6;
 
   if ((allOut || oversDone) && !m.done) {
     m.done = true;
@@ -880,28 +929,17 @@ function confirmExtra() {
     }
     if (byeAllowed && byeRuns > 0) m.extras.bye = (m.extras.bye || 0) + byeRuns;
     addBowlerBall(totalRuns, false, 'noball');
-    if (batRuns % 2 === 1) swapBat();
+    if (batRuns % 2 === 1 && !isLastManAlone()) swapBat();
 
   } else if (type === 'wide') {
     m.extras.wide = (m.extras.wide || 0) + 1;
-    const byeOff  = byeAllowed ? (totalRuns - 1) : 0;
-    if (byeOff > 0) m.extras.bye = (m.extras.bye || 0) + byeOff;
-    addBowlerBall(totalRuns, false, 'wide');
-    if (byeOff % 2 === 1) swapBat();
+    if (byeOff % 2 === 1 && !isLastManAlone()) swapBat();
 
   } else if (type === 'bye') {
     m.extras.bye = (m.extras.bye || 0) + totalRuns;
     m.bat[m.striker].balls++;
     addBowlerBall(totalRuns, true, null);
-    m.balls++;
-    if (totalRuns % 2 === 1) swapBat();
-
-  } else if (type === 'legbye') {
-    m.extras.legbye = (m.extras.legbye || 0) + totalRuns;
-    m.bat[m.striker].balls++;
-    addBowlerBall(totalRuns, true, null);
-    m.balls++;
-    if (totalRuns % 2 === 1) swapBat();
+    if (totalRuns % 2 === 1 && !isLastManAlone()) swapBat();
   }
 
   m.curOver.push({ runs: totalRuns, extra: type, isLegal, isW: false, batRuns, byeRuns });
@@ -920,17 +958,21 @@ function showWicketModal() {
   const m = G.match;
   if (!m || m.done || m.needBowler) return;
   pickedDis = null;
-
+  
   const sel = $('wkBat');
   sel.innerHTML = '';
-  [m.striker, m.nonStriker].forEach(i => sel.appendChild(new Option(m.bat[i].name, i)));
-
-  const nsel  = $('newBat');
+  if (m.nonStriker !== -1) {
+    [m.striker, m.nonStriker].forEach(i => sel.appendChild(new Option(m.bat[i].name, i)));
+  } else {
+    sel.appendChild(new Option(m.bat[m.striker].name, m.striker));
+  }
+  
+  const nsel = $('newBat');
   nsel.innerHTML = '';
   const avail = m.bat.filter(b => b.notYet && !b.out);
   avail.forEach(b => nsel.appendChild(new Option(b.name, m.bat.indexOf(b))));
   $('newBatFld').style.display = avail.length ? 'block' : 'none';
-
+  
   document.querySelectorAll('#wkModal .db').forEach(b => b.classList.remove('sel'));
   openModal('wkModal');
 }
@@ -1161,7 +1203,7 @@ function showResult() {
     winnerTeam = '';
   }
 
-  G.resultData = { winnerMsg, winnerTeam };
+  G.resultData = { winnerMsg, winnerTeam, inn1IsTeam1: inn1Team === G.setup.team1 };
   saveState();
   showResultScreen();
 }
@@ -1179,6 +1221,7 @@ function showResultScreen() {
   }
 
   const inn1Team = m.innings === 2 ? (s.batFirst === s.team1 ? s.team1 : s.team2) : s.teamA;
+  const inn1IsTeam1 = inn1Team === s.team1;
   const inn2Team = m.innings === 2 ? (s.batFirst === s.team1 ? s.team2 : s.team1) : null;
 
   function buildBatRows(batArr) {
@@ -1220,7 +1263,7 @@ function showResultScreen() {
   const ov2 = `${Math.floor(d2.balls / 6)}.${d2.balls % 6}`;
 
   const inn1HTML = d1 ? `
-    <div class="rs-inn-hd inn1">
+    <div class="rs-inn-hd ${inn1IsTeam1 ? 'inn1' : ''}">
       <span>${inn1Team}</span>
       <span class="rs-score">${d1.runs}/${d1.wickets} <small>(${ov1} ov)</small></span>
     </div>
@@ -1237,7 +1280,7 @@ function showResultScreen() {
     ${buildBowlRows(d1.bowlMap, d1.bowlOrder)}` : '';
 
   const inn2HTML = `
-    <div class="rs-inn-hd" style="margin-top:${d1 ? '20px' : '0'}">
+    <div class="rs-inn-hd ${inn1IsTeam1 ? '' : 'inn1'}" style="margin-top:${d1 ? '20px' : '0'}">
       <span>${inn2Team || s.teamA}</span>
       <span class="rs-score">${d2.runs}/${d2.wickets} <small>(${ov2} ov)</small></span>
     </div>
@@ -1390,17 +1433,29 @@ function renderBalls() {
 
 function renderBatsmen() {
   const m = G.match;
-  const s = m.bat[m.striker], ns = m.bat[m.nonStriker];
-  $('strName').textContent = s?.name  || '—';
-  $('strR').textContent    = s?.runs  || 0;
-  $('strB').textContent    = s?.balls || 0;
-  $('str4').textContent    = s?.fours || 0;
-  $('str6').textContent    = s?.sixes || 0;
+  const s = m.bat[m.striker];
+  const ns = m.nonStriker !== -1 ? m.bat[m.nonStriker] : null;
+  
+  $('strName').textContent = s?.name || '—';
+  $('strR').textContent = s?.runs || 0;
+  $('strB').textContent = s?.balls || 0;
+  $('str4').textContent = s?.fours || 0;
+  $('str6').textContent = s?.sixes || 0;
   const sr = s && s.balls > 0 ? ((s.runs / s.balls) * 100).toFixed(1) : '0.0';
-  $('strSR').textContent   = sr;
-  $('nsName').textContent  = ns?.name  || '—';
-  $('nsR').textContent     = ns?.runs  || 0;
-  $('nsB').textContent     = ns?.balls || 0;
+  $('strSR').textContent = sr;
+  
+  const nsRow = $('nsRow');
+  if (ns) {
+    nsRow.style.display = '';
+    $('nsName').textContent = ns.name || '—';
+    $('nsR').textContent = ns.runs || 0;
+    $('nsB').textContent = ns.balls || 0;
+  } else {
+    nsRow.style.display = 'none';
+    $('nsName').textContent = '—';
+    $('nsR').textContent = 0;
+    $('nsB').textContent = 0;
+  }
 }
 
 function renderBowlFigs() {
