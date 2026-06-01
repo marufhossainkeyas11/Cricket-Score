@@ -587,7 +587,8 @@ button { cursor: pointer; }
 
 .start-btn {
   width: 100%;
-  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  background: linear-gradient(135deg, var(--blue) 0%, #6b21a8 50%, var(--red) 100%);
+  opacity: .8;
   color: #fff;
   border: none;
   border-radius: var(--rs);
