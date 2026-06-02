@@ -603,19 +603,19 @@ function ball(runs, extra) {
 function wicketBall(outIdx, howOut, newBatIdx) {
   const m = G.match;
   saveSnap();
-  
+
   m.bat[outIdx].out = true;
   m.bat[outIdx].howOut = howOut;
   m.bat[outIdx].balls++;
   m.wickets++;
-  
+
   if (howOut !== 'Run Out' && m.curBowler)
     m.bowlMap[m.curBowler].wickets++;
-  
+
   addBowlerBall(0, true, null);
   m.balls++;
   m.curOver.push({ runs: 0, extra: null, isLegal: true, isW: true });
-  
+
   if (newBatIdx !== null) {
     m.bat[newBatIdx].notYet = false;
     if (m.striker === outIdx) {
@@ -623,17 +623,17 @@ function wicketBall(outIdx, howOut, newBatIdx) {
     } else {
       m.nonStriker = newBatIdx;
     }
+    m.lastNewBatIdx = newBatIdx;
   } else {
-    // নতুন ব্যাটসম্যান নেই
     if (m.striker === outIdx) {
-      m.striker = m.nonStriker;
-      m.nonStriker = -1; // কেউ নেই
+      m.striker    = m.nonStriker !== -1 ? m.nonStriker : outIdx;
+      m.nonStriker = -1;
     } else {
       m.nonStriker = -1;
     }
+    m.lastNewBatIdx = null;
   }
-  m.lastNewBatIdx = newBatIdx;
-  
+
   flash('r');
   checkOverDone();
   checkInningsDone();
@@ -678,9 +678,10 @@ function checkOverDone() {
 
 function checkInningsDone() {
   const m = G.match, s = G.setup;
-  const lastManMode = s.lastMan && m.nonStriker === -1 && m.bat[m.striker]?.out;
-  const allOut = s.lastMan ?  (m.nonStriker === -1 && m.bat[m.striker]?.out) :  (m.wickets >= s.players - 1);
-  const oversDone   = m.balls >= s.overs * 6;
+  const allOutLastMan = s.lastMan && m.nonStriker === -1 && m.bat[m.striker]?.out;
+  const allOutNormal  = !s.lastMan && m.wickets >= s.players - 1;
+  const allOut        = allOutLastMan || allOutNormal;
+  const oversDone     = m.balls >= s.overs * 6;
 
   if ((allOut || oversDone) && !m.done) {
     m.done = true;
@@ -691,7 +692,9 @@ function checkInningsDone() {
     } else {
       setTimeout(() => showResult(), 600);
     }
+    return;
   }
+
   if (m.innings === 2 && G.inn1 && m.runs > G.inn1.runs && !m.done) {
     m.done = true;
     setTimeout(() => showResult(), 400);
@@ -933,8 +936,11 @@ function confirmExtra() {
 
   } else if (type === 'wide') {
     m.extras.wide = (m.extras.wide || 0) + 1;
-    if (byeOff % 2 === 1 && !isLastManAlone()) swapBat();
-
+    const byeRuns = totalRuns - 1; 
+    if (byeAllowed && byeRuns > 0) m.extras.bye = (m.extras.bye || 0) + byeRuns;
+    addBowlerBall(totalRuns, false, 'wide');
+    if (byeRuns % 2 === 1 && !isLastManAlone()) swapBat();
+    
   } else if (type === 'bye') {
     m.extras.bye = (m.extras.bye || 0) + totalRuns;
     m.bat[m.striker].balls++;
@@ -1181,13 +1187,16 @@ function startInn2() {
 function showResult() {
   const m = G.match, s = G.setup;
   m.resultLocked = true;
+  
+  const inn1Team = m.innings === 2
+    ? (s.batFirst === s.team1 ? s.team1 : s.team2)
+    : s.teamA;
 
-  let winnerMsg  = '';
-  let winnerTeam = '';
+  let winnerMsg = '', winnerTeam = '';
 
   if (m.innings === 2 && G.inn1) {
     if (m.runs > G.inn1.runs) {
-      const wkLeft  = (s.players - 1) - m.wickets;
+      const wkLeft = (s.players - 1) - m.wickets;
       winnerMsg  = `${s.teamA} wins by ${wkLeft} wicket${wkLeft !== 1 ? 's' : ''}!`;
       winnerTeam = s.teamA;
     } else if (m.runs === G.inn1.runs) {
@@ -1203,7 +1212,11 @@ function showResult() {
     winnerTeam = '';
   }
 
-  G.resultData = { winnerMsg, winnerTeam, inn1IsTeam1: inn1Team === G.setup.team1 };
+  G.resultData = {
+    winnerMsg,
+    winnerTeam,
+    inn1IsTeam1: inn1Team === s.team1,
+  };
   saveState();
   showResultScreen();
 }
