@@ -80,7 +80,9 @@ function initSetup() {
   if (G.setup.players) $('playerCount').value = G.setup.players;
   if (G.setup.team1) $('teamA').value = G.setup.team1;
   if (G.setup.team2) $('teamB').value = G.setup.team2;
-  
+  if (G.setup.shortCric !== undefined) {
+    $('shortCricToggle').checked = G.setup.shortCric;
+  }
   const ov = +$('totalOvers').value || 20;
   const pl = +$('playerCount').value || 11;
   buildPlayerGrids(pl);
@@ -444,6 +446,7 @@ function startMatch() {
     batFirst: '',
     byeAllowed: $('byeAllowedToggle').checked,
     lastMan: $('lastManToggle').checked,
+    shortCric: !$('shortCricToggle').checked,
   };
   G.inn1 = null;
   showTossModal();
@@ -556,11 +559,15 @@ function initMatch(innings) {
 function ball(runs, extra) {
   const m = G.match;
   if (!m || m.done || m.needBowler || m.needBatsmen) return;
-  
+
+  if (runs === 6 && !extra && G.setup.shortCric) {
+    showWicketModal('overBoundary');
+    return;
+  }
+
   const isLastMan = isLastManAlone();
-  
+
   if (isLastMan && !extra && runs !== 4 && runs !== 6) {
-    const isLegal = true;
     saveSnap();
     m.bat[m.striker].balls++;
     addBowlerBall(0, true, null);
@@ -573,6 +580,32 @@ function ball(runs, extra) {
     saveState();
     return;
   }
+
+  const isLegal = extra !== 'wide' && extra !== 'noball';
+  saveSnap();
+
+  m.runs += runs;
+  if (extra) m.extras[extra] = (m.extras[extra] || 0) + 1;
+
+  if (!extra || extra === 'noball') {
+    m.bat[m.striker].runs  += runs;
+    m.bat[m.striker].fours += runs === 4 ? 1 : 0;
+    m.bat[m.striker].sixes += runs === 6 ? 1 : 0;
+  }
+  if (isLegal) m.bat[m.striker].balls++;
+
+  addBowlerBall(runs, isLegal, extra);
+  if (isLegal) m.balls++;
+  if (isLegal && runs % 2 === 1 && !isLastMan) swapBat();
+
+  m.curOver.push({ runs, extra, isLegal, isW: false });
+  flash(runs >= 4 ? 'g' : (extra ? 'r' : ''));
+
+  if (isLegal) checkOverDone();
+  checkInningsDone();
+  renderAll();
+  saveState();
+}
   
   const isLegal = extra !== 'wide' && extra !== 'noball';
   saveSnap();
@@ -829,25 +862,34 @@ function showExtraModal(type) {
   if (type === 'noball') {
     batFld.style.display = 'block';
     $('extraRunLabel').textContent = 'Total = bat runs + 1 NB';
-
+  
+    const isShort = !!G.setup.shortCric;
+  
     [0, 1, 2, 3, 4, 6].forEach(r => {
       const btn = document.createElement('button');
       btn.className = 'db' + (r === 0 ? ' sel' : '');
       btn.textContent = String(r);
-      btn.onclick = () => {
-        batGrid.querySelectorAll('.db').forEach(b => b.classList.remove('sel'));
-        btn.classList.add('sel');
-        extraState.batRuns   = r;
-        extraState.byeRuns   = 0;
-        extraState.totalRuns = r + 1;
-        $('extraRunLabel').textContent = `Total = ${r} bat + 1 NB = ${r + 1} runs`;
-        buildTotalDisplay(r + 1);
-      };
+  
+      if (r === 6 && isShort) {
+        btn.disabled = true;
+        btn.style.opacity = '0.35';
+        btn.title = '6 = OUT in Short Cricket';
+      } else {
+        btn.onclick = () => {
+          batGrid.querySelectorAll('.db').forEach(b => b.classList.remove('sel'));
+          btn.classList.add('sel');
+          extraState.batRuns   = r;
+          extraState.byeRuns   = 0;
+          extraState.totalRuns = r + 1;
+          $('extraRunLabel').textContent = `Total = ${r} bat + 1 NB = ${r + 1} runs`;
+          buildTotalDisplay(r + 1);
+        };
+      }
       batGrid.appendChild(btn);
     });
     extraState.batRuns = 0; extraState.byeRuns = 0; extraState.totalRuns = 1;
     buildTotalDisplay(1);
-
+    
   } else if (type === 'wide') {
     batFld.style.display = 'none';
 
@@ -960,11 +1002,11 @@ function confirmExtra() {
 //  WICKET MODAL
 // ═══════════════════════════════════════════════
 
-function showWicketModal() {
+function showWicketModal(forceDis) {
   const m = G.match;
   if (!m || m.done || m.needBowler) return;
   pickedDis = null;
-  
+
   const sel = $('wkBat');
   sel.innerHTML = '';
   if (m.nonStriker !== -1) {
@@ -972,14 +1014,38 @@ function showWicketModal() {
   } else {
     sel.appendChild(new Option(m.bat[m.striker].name, m.striker));
   }
-  
+
   const nsel = $('newBat');
   nsel.innerHTML = '';
   const avail = m.bat.filter(b => b.notYet && !b.out);
   avail.forEach(b => nsel.appendChild(new Option(b.name, m.bat.indexOf(b))));
   $('newBatFld').style.display = avail.length ? 'block' : 'none';
-  
+
+  const lbwBtn = $('lbwOrBoundaryBtn');
+  if (G.setup.shortCric) {
+    lbwBtn.textContent = 'Over Boundary';
+    lbwBtn.onclick = function() { pickDis(this, 'Over Boundary'); };
+  } else {
+    lbwBtn.textContent = 'LBW';
+    lbwBtn.onclick = function() { pickDis(this, 'LBW'); };
+  }
+
+  document.querySelectorAll('.rb.six').forEach(btn => {
+    btn.disabled = !!G.setup.shortCric;
+    btn.style.opacity = G.setup.shortCric ? '0.35' : '';
+    btn.title = G.setup.shortCric ? '6 = OUT in Short Cricket' : '';
+  });
+
   document.querySelectorAll('#wkModal .db').forEach(b => b.classList.remove('sel'));
+
+  if (forceDis === 'overBoundary') {
+    pickedDis = 'Over Boundary';
+    sel.value = m.striker;
+    setTimeout(() => {
+      lbwBtn.classList.add('sel');
+    }, 50);
+  }
+
   openModal('wkModal');
 }
 
@@ -1365,6 +1431,16 @@ function renderAll() {
   renderBalls();
   renderBatsmen();
   renderBowlFigs();
+  applyScoringUI();
+}
+
+function applyScoringUI() {
+  const isShort = !!G.setup?.shortCric;
+  document.querySelectorAll('.rb.six').forEach(btn => {
+    btn.disabled    = isShort;
+    btn.style.opacity = isShort ? '0.35' : '';
+    btn.title       = isShort ? '6 = OUT in Short Cricket' : '';
+  });
 }
 
 function renderHeader() {
