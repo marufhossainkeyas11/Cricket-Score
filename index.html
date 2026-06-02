@@ -113,6 +113,13 @@
               <span class="toggle-sub">Last batsman bats alone — scores only on extras &amp; boundaries</span>
           </div>
           </label>
+          <label class="toggle-row" style="margin-top: 10px;">
+            <input type="checkbox" id="shortCricToggle">
+            <div class="toggle-text">
+              <span class="toggle-title">Full Cricket Mode</span>
+              <span class="toggle-sub">Toggle ON for Full Cricket — normal 6s allowed. Default is Short Cricket where 6 = OUT (over boundary).</span>
+            </div>
+          </label>
         </div>
 
         <button class="start-btn" onclick="startMatch()">🏏 Start Match</button>
@@ -296,7 +303,7 @@
       <div class="dis-grid">
         <button class="db" onclick="pickDis(this,'Bowled')">Bowled</button>
         <button class="db" onclick="pickDis(this,'Caught')">Caught</button>
-        <button class="db" onclick="pickDis(this,'LBW')">LBW</button>
+        <button class="db" onclick="pickDis(this,'LBW')" id="lbwOrBoundaryBtn">LBW</button>
         <button class="db" onclick="pickDis(this,'Run Out')">Run Out</button>
         <button class="db" onclick="pickDis(this,'Stumped')">Stumped</button>
         <button class="db" onclick="pickDis(this,'Hit Wicket')">Hit Wicket</button>
@@ -375,15 +382,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="app.js"></script>
 <script>
-(function () {
-  if (!('serviceWorker' in navigator)) return;
-
-  // ── Toast UI (নিজের CSS থাকলে সরিয়ে দাও) ───────────
-  function injectToastStyle() {
-    if (document.getElementById('sw-toast-style')) return;
-    const s = document.createElement('style');
-    s.id = 'sw-toast-style';
-    s.textContent = `
+    (function() {
+      if (!('serviceWorker' in navigator)) return;
+      
+      // ── Toast UI (নিজের CSS থাকলে সরিয়ে দাও) ───────────
+      function injectToastStyle() {
+        if (document.getElementById('sw-toast-style')) return;
+        const s = document.createElement('style');
+        s.id = 'sw-toast-style';
+        s.textContent = `
       #sw-update-bar {
         position: fixed; bottom: 0; left: 0; right: 0; z-index: 99999;
         background: #1e40af; color: #fff;
@@ -402,75 +409,89 @@
       }
       #sw-update-bar button:hover { background: #dbeafe; }
     `;
-    document.head.appendChild(s);
-  }
-
-  function showUpdateBar(newSW) {
-    injectToastStyle();
-    let bar = document.getElementById('sw-update-bar');
-    if (!bar) {
-      bar = document.createElement('div');
-      bar.id = 'sw-update-bar';
-      bar.innerHTML = `
-        <span>🏏 New version ready — refresh and update!</span>
+        document.head.appendChild(s);
+      }
+      
+      function showUpdateBar(newSW) {
+        injectToastStyle();
+        let bar = document.getElementById('sw-update-bar');
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.id = 'sw-update-bar';
+          bar.innerHTML = `
+        <span> New version ready — refresh and update!</span>
         <button id="sw-update-btn">Update</button>`;
-      document.body.appendChild(bar);
-    }
-    // রিফ্রেশ বাটন
-    bar.querySelector('#sw-update-btn').onclick = () => {
-      newSW.postMessage({ type: 'SKIP_WAITING' });
-    };
-    requestAnimationFrame(() => bar.classList.add('show'));
-  }
-
-  // ── SW controller বদলালে → reload ─────────────────
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
-
-  // ── Register ────────────────────────────────────────
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .then(reg => {
-
-      // ইতিমধ্যে waiting SW আছে? (পুরনো tab থেকে ফিরে এলে)
-      if (reg.waiting && navigator.onLine) {
-        showUpdateBar(reg.waiting);
-      }
-
-      // নতুন SW install হলে
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            // শুধু online থাকলে জানাও, offline এ চুপ থাকো
-            if (navigator.onLine) {
-              showUpdateBar(newSW);
-            }
-          }
-        });
-      });
-
-      // Online হলে background update check
-      window.addEventListener('online', () => {
-        reg.update().catch(() => {});
-      });
-
-      // ── Version log (debug) ─────────────────────────
-      if (navigator.serviceWorker.controller) {
-        const ch = new MessageChannel();
-        ch.port1.onmessage = ({ data }) => {
-          console.log(`[App] SW version: ${data?.version ?? 'unknown'}`);
+          document.body.appendChild(bar);
+        }
+        // রিফ্রেশ বাটন
+        bar.querySelector('#sw-update-btn').onclick = () => {
+          newSW.postMessage({ type: 'SKIP_WAITING' });
         };
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'GET_VERSION' }, [ch.port2]
-        );
+        requestAnimationFrame(() => bar.classList.add('show'));
       }
-    })
-    .catch(err => console.warn('[SW] Registration failed:', err));
-})();
+      
+      // ── SW controller বদলালে → reload ─────────────────
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        sessionStorage.setItem('swUpdated', '1');
+        window.location.reload();
+      });
+      
+      window.addEventListener('load', () => {
+        if (sessionStorage.getItem('swUpdated')) {
+          sessionStorage.removeItem('swUpdated');
+          
+          const ch = new MessageChannel();
+          ch.port1.onmessage = ({ data }) => {
+            showToast(`Updated App Version: ${data?.version ?? 'unknown'}`, true);
+          };
+          
+          navigator.serviceWorker.controller?.postMessage({ type: 'GET_VERSION' },
+            [ch.port2]
+          );
+        }
+      });
+      
+      // ── Register ────────────────────────────────────────
+      navigator.serviceWorker.register('./sw.js', { scope: './' })
+        .then(reg => {
+          
+          // ইতিমধ্যে waiting SW আছে? (পুরনো tab থেকে ফিরে এলে)
+          if (reg.waiting && navigator.onLine) {
+            showUpdateBar(reg.waiting);
+          }
+          
+          // নতুন SW install হলে
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', () => {
+              if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                // শুধু online থাকলে জানাও, offline এ চুপ থাকো
+                if (navigator.onLine) {
+                  showUpdateBar(newSW);
+                }
+              }
+            });
+          });
+          
+          // Online হলে background update check
+          window.addEventListener('online', () => {
+            reg.update().catch(() => {});
+          });
+          
+          // ── Version log (debug) ─────────────────────────
+          /*if (navigator.serviceWorker.controller) {
+            const ch = new MessageChannel();
+            ch.port1.onmessage = ({ data }) => {
+              showToast(`[App] SW version: ${data?.version ?? 'unknown'}`, true);
+            };
+            navigator.serviceWorker.controller.postMessage(
+              { type: 'GET_VERSION' }, [ch.port2]
+            );
+          }*/
+        })
+        .catch(err => console.warn('[SW] Registration failed:', err));
+    })();
 </script>
 
 </body>
