@@ -1321,7 +1321,8 @@ function showResultScreen() {
       <span class="rs-score">${d1.runs}/${d1.wickets} <small>(${ov1} ov)</small></span>
     </div>
     <div class="rs-tbl-hd">
-      <span>Batter</span><span>Dismissal</span>
+      <span class="rs-nm">Batter</span>
+      <span class="rs-hw">Dismissal</span>
       <span>R</span><span>B</span><span>4/6</span><span>SR</span>
     </div>
     ${buildBatRows(d1.bat)}
@@ -1338,7 +1339,8 @@ function showResultScreen() {
       <span class="rs-score">${d2.runs}/${d2.wickets} <small>(${ov2} ov)</small></span>
     </div>
     <div class="rs-tbl-hd">
-      <span>Batter</span><span>Dismissal</span>
+      <span class="rs-nm">Batter</span>
+      <span class="rs-hw">Dismissal</span>
       <span>R</span><span>B</span><span>4/6</span><span>SR</span>
     </div>
     ${buildBatRows(d2.bat)}
