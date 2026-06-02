@@ -96,31 +96,72 @@
           <div class="pgrid" id="bowlGrid"></div>
         </div>
 
-        <!-- STEP 5: Match Rules -->
-        <div class="step">
-          <div class="step-hd">05 · MATCH RULES</div>
-          <label class="toggle-row">
-            <input type="checkbox" id="byeAllowedToggle">
-            <div class="toggle-text">
-              <span class="toggle-title">Allow Bye &amp; Leg Bye runs</span>
-              <span class="toggle-sub">Disable for local matches that don't count bye runs</span>
+          <!-- STEP 5: Match Rules -->
+          <div class="step">
+            <div class="step-hd">05 · MATCH RULES</div>
+            
+            <div class="rules-list">
+              
+              <label class="rule-item">
+                <input type="checkbox" id="byeAllowedToggle" class="rule-cb">
+                <div class="rule-body">
+                  <div class="rule-ico-wrap">🦵</div>
+                  <div class="rule-text">
+                    <span class="rule-title">Bye &amp; Leg Bye Runs</span>
+                    <span class="rule-sub">Disable for local matches that don't count bye runs</span>
+                  </div>
+                </div>
+                <div class="rule-switch" aria-hidden="true">
+                  <div class="rule-knob"></div>
+                </div>
+              </label>
+              
+              <label class="rule-item">
+                <input type="checkbox" id="lastManToggle" class="rule-cb">
+                <div class="rule-body">
+                  <div class="rule-ico-wrap">🧍</div>
+                  <div class="rule-text">
+                    <span class="rule-title">Last Man Standing</span>
+                    <span class="rule-sub">Last batsman bats alone — scores only on extras &amp; boundaries</span>
+                  </div>
+                </div>
+                <div class="rule-switch" aria-hidden="true">
+                  <div class="rule-knob"></div>
+                </div>
+              </label>
+              
+              <label class="rule-item">
+                <input type="checkbox" id="shortCricToggle" class="rule-cb">
+                <div class="rule-body">
+                  <div class="rule-ico-wrap">🏟️</div>
+                  <div class="rule-text">
+                    <span class="rule-title">Full Cricket Mode</span>
+                    <span class="rule-sub">Toggle ON for Full Cricket — normal 6s allowed</span>
+                  </div>
+                </div>
+                <div class="rule-switch" aria-hidden="true">
+                  <div class="rule-knob"></div>
+                </div>
+              </label>
+              
             </div>
-          </label>
-          <label class="toggle-row" style="margin-top: 10px;">
-            <input type="checkbox" id="lastManToggle">
-            <div class="toggle-text">
-              <span class="toggle-title">Last Man Standing</span>
-              <span class="toggle-sub">Last batsman bats alone — scores only on extras &amp; boundaries</span>
+            
+            <!-- Reset — isolated zone, clearly dangerous -->
+            <div class="danger-zone">
+              <div class="dz-left">
+                <div class="dz-label">DANGER ZONE</div>
+                <div class="dz-title">Reset All</div>
+                <div class="dz-sub">Clears every input &amp; cached match data permanently</div>
+              </div>
+              <button class="dz-btn" onclick="if(confirm('All data will be deleted. Are you sure?')) doNewMatch()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor">
+                  <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
+                </svg>
+                Reset
+              </button>
+            </div>
+            
           </div>
-          </label>
-          <label class="toggle-row" style="margin-top: 10px;">
-            <input type="checkbox" id="shortCricToggle">
-            <div class="toggle-text">
-              <span class="toggle-title">Full Cricket Mode</span>
-              <span class="toggle-sub">Toggle ON for Full Cricket — normal 6s allowed. Default is Short Cricket where 6 = OUT (over boundary).</span>
-            </div>
-          </label>
-        </div>
 
         <button class="start-btn" onclick="startMatch()">🏏 Start Match</button>
       </div>
