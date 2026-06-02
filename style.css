@@ -1563,3 +1563,217 @@ modal, .modal-bg {
   .dis-grid { grid-template-columns: repeat(2, 1fr); }
   .card     { padding: 16px 13px; }
 }
+
+/* ── MATCH RULES v2 ─────────────────────────── */
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.rule-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--bg3);
+  transition: background var(--trans);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.rule-item:last-child {
+  border-bottom: none;
+}
+
+.rule-item:active {
+  background: rgba(21, 101, 192, 0.04);
+}
+
+.rule-cb {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.rule-body {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-ico-wrap {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  background: var(--sf2);
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background var(--trans), border-color var(--trans);
+}
+
+.rule-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rule-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.rule-sub {
+  font-size: 11px;
+  color: var(--t3);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Custom pill switch */
+.rule-switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--sf2);
+  border: 1.5px solid var(--bdr);
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.rule-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--t3);
+  transition: transform 0.2s cubic-bezier(.4,0,.2,1), background 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.4);
+}
+
+/* Checked state — wire via JS or :has() */
+.rule-item:has(.rule-cb:checked) .rule-switch {
+  background: var(--blue);
+  border-color: var(--blue2);
+}
+.rule-item:has(.rule-cb:checked) .rule-knob {
+  transform: translateX(18px);
+  background: #fff;
+}
+.rule-item:has(.rule-cb:checked) .rule-ico-wrap {
+  background: rgba(21, 101, 192, 0.12);
+  border-color: rgba(21, 101, 192, 0.3);
+}
+.rule-item:has(.rule-cb:checked) .rule-title {
+  color: #93c5fd;
+}
+
+/* ── DANGER ZONE ────────────────────────────── */
+.danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  background: rgba(127, 29, 29, 0.12);
+  border: 1px solid rgba(211, 47, 47, 0.22);
+  border-radius: var(--rs);
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle top accent line */
+.danger-zone::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(229, 57, 53, 0.5), transparent);
+}
+
+.dz-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dz-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(229, 57, 53, 0.55);
+  text-transform: uppercase;
+  margin-bottom: 1px;
+}
+
+.dz-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fca5a5;
+  line-height: 1.2;
+}
+
+.dz-sub {
+  font-size: 10px;
+  color: var(--t3);
+  line-height: 1.4;
+}
+
+.dz-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(211, 47, 47, 0.12);
+  border: 1.5px solid rgba(211, 47, 47, 0.35);
+  border-radius: var(--rs);
+  color: #f87171;
+  font-family: var(--f);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 9px 16px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background var(--trans), border-color var(--trans), color var(--trans);
+}
+
+.dz-btn:active {
+  background: rgba(211, 47, 47, 0.25);
+  border-color: var(--red2);
+  color: #fca5a5;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dz-btn:hover {
+    background: rgba(211, 47, 47, 0.22);
+    border-color: var(--red2);
+    color: #fca5a5;
+  }
+  .rule-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
