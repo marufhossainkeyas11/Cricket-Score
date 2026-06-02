@@ -76,13 +76,14 @@ function teamCode(name) {
 // ═══════════════════════════════════════════════
 
 function initSetup() {
-  if (G.setup.overs) $('totalOvers').value = G.setup.overs;
+  if (G.setup.overs)   $('totalOvers').value  = G.setup.overs;
   if (G.setup.players) $('playerCount').value = G.setup.players;
-  if (G.setup.team1) $('teamA').value = G.setup.team1;
-  if (G.setup.team2) $('teamB').value = G.setup.team2;
+  if (G.setup.team1)   $('teamA').value = G.setup.team1;
+  if (G.setup.team2)   $('teamB').value = G.setup.team2;
   if (G.setup.shortCric !== undefined) {
     $('shortCricToggle').checked = G.setup.shortCric;
   }
+
   const ov = +$('totalOvers').value || 20;
   const pl = +$('playerCount').value || 11;
   buildPlayerGrids(pl);
@@ -93,6 +94,8 @@ function initSetup() {
   if (G.setup.lastMan !== undefined) {
     $('lastManToggle').checked = G.setup.lastMan;
   }
+  bindSmartInput('totalOvers',  1, 499);
+  bindSmartInput('playerCount', 2, 22);
 }
 
 function onMatchChange() {
@@ -552,6 +555,37 @@ function initMatch(innings) {
 
   renderHeader();
   renderAll();
+}
+
+function bindSmartInput(id, min, max) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  
+  inp.addEventListener('keydown', function(e) {
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) || ctrl) return;
+    
+    if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
+    
+    const cur = this.value.replace(/\D/g, '');
+    const next = cur + e.key; 
+    const num = parseInt(next, 10);
+    
+    if (num > max) { e.preventDefault(); return; }
+    
+    if (next.length > 0 && next[0] === '0') { e.preventDefault(); return; }
+  });
+  
+  inp.addEventListener('change', function() {
+    let v = parseInt(this.value, 10);
+    if (isNaN(v) || v < min) v = min;
+    if (v > max) v = max;
+    this.value = v;
+  });
+  
+  inp.addEventListener('blur', function() {
+    inp.dispatchEvent(new Event('change'));
+  });
 }
 
 // ═══════════════════════════════════════════════
