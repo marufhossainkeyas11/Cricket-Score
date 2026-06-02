@@ -1321,15 +1321,16 @@ function showResultScreen() {
       <span class="rs-score">${d1.runs}/${d1.wickets} <small>(${ov1} ov)</small></span>
     </div>
     <div class="rs-tbl-hd">
-      <span class="rs-nm">Batter</span>
-      <span class="rs-hw">Dismissal</span>
-      <span>R</span><span>B</span><span>4/6</span><span>SR</span>
-    </div>
+       <span class="rs-nm">Batter</span><span class="rs-hw">Dismissal</span>
+       <span class="rs-r">R</span><span class="rs-b">B</span>
+       <span class="rs-46">4/6</span><span class="rs-sr">SR</span>
+     </div>
     ${buildBatRows(d1.bat)}
     <div class="rs-extras">Extras: ${d1.extras.wide}wd ${d1.extras.noball}nb ${d1.extras.bye}b ${d1.extras.legbye}lb</div>
-    <div class="rs-tbl-hd" style="margin-top:10px">
-      <span>Bowler</span><span>Overs</span>
-      <span>R</span><span>W</span><span>Wd</span><span>Eco</span>
+      <div class="rs-tbl-hd" style="margin-top:10px">
+      <span class="rs-nm">Bowler</span><span class="rs-hw">Overs</span>
+      <span class="rs-r">R</span><span class="rs-b">W</span>
+      <span class="rs-46">Wd</span><span class="rs-sr">Eco</span>
     </div>
     ${buildBowlRows(d1.bowlMap, d1.bowlOrder)}` : '';
 
@@ -1339,15 +1340,16 @@ function showResultScreen() {
       <span class="rs-score">${d2.runs}/${d2.wickets} <small>(${ov2} ov)</small></span>
     </div>
     <div class="rs-tbl-hd">
-      <span class="rs-nm">Batter</span>
-      <span class="rs-hw">Dismissal</span>
-      <span>R</span><span>B</span><span>4/6</span><span>SR</span>
-    </div>
+      <span class="rs-nm">Batter</span><span class="rs-hw">Dismissal</span>
+       <span class="rs-r">R</span><span class="rs-b">B</span>
+      <span class="rs-46">4/6</span><span class="rs-sr">SR</span>
+   </div>
     ${buildBatRows(d2.bat)}
     <div class="rs-extras">Extras: ${d2.extras.wide}wd ${d2.extras.noball}nb ${d2.extras.bye}b ${d2.extras.legbye}lb</div>
     <div class="rs-tbl-hd" style="margin-top:10px">
-      <span>Bowler</span><span>Overs</span>
-      <span>R</span><span>W</span><span>Wd</span><span>Eco</span>
+       <span class="rs-nm">Bowler</span><span class="rs-hw">Overs</span>
+       <span class="rs-r">R</span><span class="rs-b">W</span>
+       <span class="rs-46">Wd</span><span class="rs-sr">Eco</span>
     </div>
     ${buildBowlRows(d2.bowlMap, d2.bowlOrder)}`;
 
