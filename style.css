@@ -38,6 +38,10 @@
 }
 
 body {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none; /* text select বন্ধ */
+  user-select: none;
   background: var(--bg);
   color: var(--text);
   font-family: var(--f);
@@ -706,6 +710,10 @@ button { cursor: pointer; }
   font-size: 17px;
   font-weight: 700;
   color: var(--grn);
+}
+
+#sbOv{
+  color: #FFEC8D;
 }
 
 .sb-prog { margin-top: 12px; }
