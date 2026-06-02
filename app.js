@@ -606,32 +606,6 @@ function ball(runs, extra) {
   renderAll();
   saveState();
 }
-  
-  const isLegal = extra !== 'wide' && extra !== 'noball';
-  saveSnap();
-  
-  m.runs += runs;
-  if (extra) m.extras[extra] = (m.extras[extra] || 0) + 1;
-  
-  if (!extra || extra === 'noball') {
-    m.bat[m.striker].runs += runs;
-    m.bat[m.striker].fours += runs === 4 ? 1 : 0;
-    m.bat[m.striker].sixes += runs === 6 ? 1 : 0;
-  }
-  if (isLegal) m.bat[m.striker].balls++;
-  
-  addBowlerBall(runs, isLegal, extra);
-  if (isLegal) m.balls++;
-  if (isLegal && runs % 2 === 1 && !isLastMan) swapBat();
-  
-  m.curOver.push({ runs, extra, isLegal, isW: false });
-  flash(runs >= 4 ? 'g' : (extra ? 'r' : ''));
-  
-  if (isLegal) checkOverDone();
-  checkInningsDone();
-  renderAll();
-  saveState();
-}
 
 function wicketBall(outIdx, howOut, newBatIdx) {
   const m = G.match;
