@@ -107,9 +107,11 @@ function onMatchChange() {
 
 function autoSetLastMan(pl) {
   const toggle = $('lastManToggle');
-  if (!toggle) return;
+  //if (!toggle) return;
   if (pl <= 5) {
     toggle.checked = true;
+  } else {
+    toggle.checked = false;
   }
 }
 
