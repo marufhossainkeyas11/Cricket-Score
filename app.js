@@ -280,11 +280,12 @@ function showEditPlayersModal() {
   let html = `
     <div id="editPlayersModal" class="modal-bg" style="display:flex">
       <div class="modal" style="max-width:420px">
-        <div class="modal-ttl">Edit Players
+        <div class="modal-ttl">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="26" height="26"
                fill="currentColor" style="transform:translateY(4px)">
             <path d="M480-240Zm-320 80v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q37 0 73 4.5t72 14.5l-67 68q-20-3-39-5t-39-2q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32h240v80H160Zm400 40v-123l221-220q9-9 20-13t22-4q12 0 23 4.5t20 13.5l37 37q8 9 12.5 20t4.5 22q0 11-4 22.5T903-340L683-120H560Zm300-263-37-37 37 37ZM620-180h38l121-122-18-19-19-18-122 121v38Zm141-141-19-18 37 37-18-19ZM367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm169.5-56.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Z"/>
           </svg>
+          Edit Players
         </div>`;
 
   // Bowler section
@@ -1082,7 +1083,11 @@ function openBowlerModal() {
   pickedBowler = null;
 
   const overNum = Math.floor(m.balls / 6) + 1;
-  $('bowlerModalTitle').textContent = `Over ${overNum} — Select Bowler`;
+  const ballIcon = ` <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" style="transform:translateY(4px)" viewBox="0 0 24 24">
+                         <path d="M0 0h24v24H0z" fill="none" />
+                         <path fill="currentColor" d="m3.62 15.85l.53.53l-.73.73c.3.5.63.97 1.01 1.4L18.51 4.43c-.44-.38-.91-.71-1.4-1.01l-.73.73l-.53-.53l.57-.57A9.96 9.96 0 0 0 12 2C6.49 2 2 6.49 2 12c0 1.59.38 3.09 1.05 4.42zM14.8 4.67l.53.53l-1.75 1.75l-.53-.53zM12 7.47l.53.53l-1.75 1.75l-.53-.53zm-2.8 2.8l.53.53l-1.75 1.75l-.53-.53zm-2.8 2.8l.53.53l-1.75 1.75l-.53-.53zm13.98-4.92l-.53-.53l.73-.73c-.3-.5-.63-.97-1.01-1.4L5.49 19.57c.44.38.91.71 1.4 1.01l.73-.73l.53.53l-.57.57C8.92 21.61 10.41 22 12 22c5.51 0 10-4.49 10-10c0-1.59-.38-3.09-1.05-4.42zM9.2 19.33l-.53-.53l1.75-1.75l.53.53zm2.8-2.8l-.53-.53l1.75-1.75l.53.53zm2.8-2.8l-.53-.53l1.75-1.75l.53.53zm2.8-2.8l-.53-.53l1.75-1.75l.53.53z" />
+                       </svg> `;
+  $('bowlerModalTitle').innerHTML = ballIcon+` Over ${overNum} — Select Bowler`;
   $('bowlerModalInfo').innerHTML =
     `Over ${overNum} of ${G.setup.overs}<br>Previous: <strong>${m.prevBowler || '—'}</strong> (cannot bowl consecutive overs)`;
 
