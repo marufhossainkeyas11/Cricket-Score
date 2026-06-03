@@ -694,7 +694,13 @@ const ThemeSystem = (() => {
         })();
       meta.content = dark ? '#0d1117' : '#f0f4f9';
       
-      syncToggleUI(dark); // theme বদলালেই toggle sync
+      syncToggleUI(dark);
+
+      if (_toggleEl && !_toggleEl.classList.contains('initialized')) {
+        requestAnimationFrame(() => {
+          _toggleEl.classList.add('initialized');
+        });
+      }
       
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
@@ -818,14 +824,16 @@ const ThemeSystem = (() => {
         evaluate();
       }
       
-      // toggle listener এখানে, init এর ভেতরে — race condition নেই
       if (_toggleEl) {
         _toggleEl.addEventListener('change', () => {
           ThemeSystem.toggle();
-          // syncToggleUI toggle() এর ভেতরেই হয়, তবু
-          // browser এর checked state নিশ্চিত করতে:
           _toggleEl.checked = document.documentElement.getAttribute('data-theme') === 'dark';
         });
+        
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        _toggleEl.checked = isDark;
+        
+        _toggleEl.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
     
