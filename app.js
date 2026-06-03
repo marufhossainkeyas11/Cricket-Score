@@ -557,34 +557,33 @@ function initMatch(innings) {
   renderAll();
 }
 
+
 function bindSmartInput(id, min, max) {
   const inp = document.getElementById(id);
   if (!inp) return;
-  
-  inp.addEventListener('keydown', function(e) {
+
+  inp.addEventListener('keydown', function (e) {
     const ctrl = e.ctrlKey || e.metaKey;
-    if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key) || ctrl) return;
-    
+    if (['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key) || ctrl) return;
     if (!/^\d$/.test(e.key)) { e.preventDefault(); return; }
-    
-    const cur = this.value.replace(/\D/g, '');
-    const next = cur + e.key; 
-    const num = parseInt(next, 10);
-    
+
+    const cur  = this.value.replace(/\D/g, '');
+    const next = cur + e.key;
+    const num  = parseInt(next, 10);
+
     if (num > max) { e.preventDefault(); return; }
-    
     if (next.length > 0 && next[0] === '0') { e.preventDefault(); return; }
   });
-  
-  inp.addEventListener('change', function() {
+
+  inp.addEventListener('blur', function () {
     let v = parseInt(this.value, 10);
     if (isNaN(v) || v < min) v = min;
-    if (v > max) v = max;
-    this.value = v;
-  });
-  
-  inp.addEventListener('blur', function() {
-    inp.dispatchEvent(new Event('change'));
+    if (v > max)             v = max;
+    
+    if (this.value !== String(v)) {
+      this.value = v;
+      this.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   });
 }
 
