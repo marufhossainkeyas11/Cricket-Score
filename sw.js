@@ -7,7 +7,7 @@
 //    • Version bump = CACHE_VER only. No manual ASSETS list needed.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VER   = 'v2.1.6';   
+const CACHE_VER   = 'v2.1.7';   
 const SHELL_KEY   = `cs-shell-${CACHE_VER}`;
 const MEDIA_KEY   = `cs-media-${CACHE_VER}`;
 const FONT_KEY    = `cs-fonts-${CACHE_VER}`;
