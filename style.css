@@ -1892,7 +1892,8 @@ modal, .modal-bg {
   font-style: normal;
   font-weight: 700;
   display: flex; align-items: center; justify-content: center;
-  margin-top: 1px;
+  margin-top: 2px;
+  align-self: flex-start;
 }
 .pwa-step span strong { color: var(--text); font-weight: 600; }
 
