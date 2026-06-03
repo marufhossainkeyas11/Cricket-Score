@@ -437,20 +437,24 @@
 
 <div id="pwa-popup">
   <div class="pwa-top">
-    <div class="pwa-icon">📱</div>
+    <div class="pwa-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/>
+      </svg>
+    </div>
     <div>
-      <div class="pwa-title">অ্যাপটি ইনস্টল করুন</div>
-      <div class="pwa-sub">একবার ইনস্টল করলেই<br>সরাসরি ফোনে পাবেন — ইন্টারনেট ছাড়াও!</div>
+      <div class="pwa-title">Install App</div>
+      <div class="pwa-sub">Get the full experience — works offline too.</div>
     </div>
   </div>
   <div class="pwa-steps" id="pwa-steps">
-    <div class="pwa-step"><b>1</b><span>নিচে <strong>Share</strong> বাটনে (□↑) ট্যাপ করুন</span></div>
-    <div class="pwa-step"><b>2</b><span><strong>"Add to Home Screen"</strong> সিলেক্ট করুন</span></div>
-    <div class="pwa-step"><b>3</b><span>উপরে <strong>"Add"</strong> চাপুন — হয়ে গেল!</span></div>
+    <div class="pwa-step"><i>1</i><span>Tap the <strong>Share</strong> button (□↑) at the bottom</span></div>
+    <div class="pwa-step"><i>2</i><span>Select <strong>"Add to Home Screen"</strong></span></div>
+    <div class="pwa-step"><i>3</i><span>Tap <strong>"Add"</strong> — you're done!</span></div>
   </div>
   <div class="pwa-btns">
-    <button id="pwa-install">⬇ Install করুন</button>
-    <button id="pwa-dismiss">পরে</button>
+    <button id="pwa-install">Install</button>
+    <button id="pwa-dismiss">Not now</button>
   </div>
 </div>
 
@@ -612,7 +616,7 @@
     // iOS Safari
     if (isIOS) {
       steps.classList.add('show');
-      installB.textContent = '📖 কীভাবে করবো?';
+      installB.textContent = 'How do I do it?';
       setTimeout(show, 3000);
     }
   
