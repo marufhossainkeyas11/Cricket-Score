@@ -32,8 +32,7 @@
   --trans: 0.15s ease;
 }
 
-/*[data-theme="light"]*/
-:root{
+[data-theme="light"] {
   --bg:   #f0f4f9;
   --bg2:  #e4eaf3;
   --bg3:  #d9e1ee;
