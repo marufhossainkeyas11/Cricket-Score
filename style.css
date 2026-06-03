@@ -189,7 +189,6 @@ button { cursor: pointer; }
   font-weight: 700;
   letter-spacing: 2px;
   color: #7D838F;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   text-transform: uppercase;
   margin-bottom: 12px;
 }
@@ -1820,15 +1819,15 @@ modal, .modal-bg {
   left: 50%;
   transform: translateX(-50%) translateY(120%);
   z-index: 9999;
-  width: min(420px, calc(100vw - 2rem));
-  background: #111;
-  color: #f5f0e8;
-  border-radius: 20px;
-  padding: 1.4rem 1.5rem;
-  box-shadow: 0 8px 40px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.07);
-  transition: transform .5s cubic-bezier(.22,1,.36,1), opacity .4s;
+  width: min(400px, calc(100vw - 2rem));
+  background: var(--bg2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 1.2rem;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  transition: transform .45s cubic-bezier(.22,1,.36,1), opacity .35s;
   opacity: 0;
-  font-family: system-ui, sans-serif;
+  font-family: var(--f);
 }
 #pwa-popup.show {
   transform: translateX(-50%) translateY(0);
@@ -1838,71 +1837,95 @@ modal, .modal-bg {
 .pwa-top {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: .9rem;
   margin-bottom: 1rem;
 }
 .pwa-icon {
-  width: 52px; height: 52px;
-  background: linear-gradient(135deg, #e8400c, #ff6b00);
-  border-radius: 14px;
+  width: 46px; height: 46px;
+  background: var(--blue);
+  border-radius: var(--rs);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.6rem;
   flex-shrink: 0;
 }
-.pwa-title { font-size: 1rem; font-weight: 700; margin-bottom: .2em; }
-.pwa-sub   { font-size: .8rem; color: #888; line-height: 1.4; }
+.pwa-icon svg { width: 22px; height: 22px; color: #fff; }
+
+.pwa-title {
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: .18em;
+}
+.pwa-sub {
+  font-size: .78rem;
+  color: var(--t2);
+  line-height: 1.45;
+}
 
 /* iOS steps */
 .pwa-steps {
   display: none;
   flex-direction: column;
-  gap: .6rem;
+  gap: .5rem;
   margin-bottom: 1rem;
-  background: rgba(255,255,255,.04);
-  border-radius: 12px;
-  padding: .9rem 1rem;
+  background: var(--sf);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  padding: .85rem 1rem;
 }
 .pwa-steps.show { display: flex; }
+
 .pwa-step {
-  display: flex; align-items: flex-start; gap: .7rem;
-  font-size: .82rem; color: #aaa; line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  font-size: .8rem;
+  color: var(--t2);
+  line-height: 1.45;
 }
-.pwa-step b {
+.pwa-step i {
   flex-shrink: 0;
-  width: 22px; height: 22px;
-  background: #e8400c;
+  width: 20px; height: 20px;
+  background: var(--blue);
   border-radius: 50%;
   color: #fff;
-  font-size: .7rem;
+  font-size: .65rem;
+  font-style: normal;
+  font-weight: 700;
   display: flex; align-items: center; justify-content: center;
+  margin-top: 1px;
 }
-.pwa-step span strong { color: #f0ece4; }
+.pwa-step span strong { color: var(--text); font-weight: 600; }
 
-.pwa-btns { display: flex; gap: .6rem; }
+.pwa-btns {
+  display: flex;
+  gap: .5rem;
+}
 
 #pwa-install {
   flex: 1;
-  background: #e8400c;
+  background: var(--blue);
   color: #fff;
   border: none;
-  border-radius: 2em;
-  padding: .75em 1.2em;
-  font-size: .88rem;
-  font-weight: 700;
+  border-radius: var(--rs);
+  padding: .68em 1rem;
+  font-size: .84rem;
+  font-weight: 600;
+  font-family: var(--f);
   cursor: pointer;
-  transition: background .15s, transform .12s;
+  transition: background var(--trans);
 }
-#pwa-install:hover  { background: #c93000; }
-#pwa-install:active { transform: scale(.97); }
+#pwa-install:hover  { background: var(--blue2); }
+#pwa-install:active { opacity: .85; }
 
 #pwa-dismiss {
-  background: rgba(255,255,255,.07);
-  color: #888;
-  border: none;
-  border-radius: 2em;
-  padding: .75em 1.1em;
+  background: var(--sf);
+  color: var(--t2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rs);
+  padding: .68em 1rem;
   font-size: .82rem;
+  font-family: var(--f);
   cursor: pointer;
-  transition: background .15s;
+  transition: background var(--trans), color var(--trans);
 }
-#pwa-dismiss:hover { background: rgba(255,255,255,.12); }
+#pwa-dismiss:hover { background: var(--sf2); color: var(--text); }
