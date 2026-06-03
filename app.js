@@ -95,7 +95,7 @@ function initSetup() {
     $('lastManToggle').checked = G.setup.lastMan;
   }
   bindSmartInput('totalOvers',  1, 499);
-  bindSmartInput('playerCount', 2, 22);
+  bindSmartInput('playerCount', 1, 22);
 }
 
 function onMatchChange() {
