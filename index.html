@@ -659,184 +659,190 @@
     window.addEventListener('appinstalled', hide);
   })();
 </script>
-  <script>
+<script>
+const ThemeSystem = (() => {
+    const WEIGHTS = {
+      userOverride: 100,
+      localStorage: 60,
+      ambientLight: 40,
+      osPreference: 30,
+      timeOfDay: 20,
+      battery: 20,
+    };
     
-    const ThemeSystem = (() => {
+    let _signals = {};
+    let _listeners = [];
+    let _manualSet = false;
+    let _toggleEl = null; // toggle এর reference ভেতরে রাখা
+    
+    // toggle sync করার একটাই জায়গা
+    function syncToggleUI(dark) {
+      if (_toggleEl) _toggleEl.checked = dark;
+    }
+    
+    function applyTheme(dark, source = 'auto') {
+      const root = document.documentElement;
+      root.setAttribute('data-theme', dark ? 'dark' : 'light');
+      root.style.colorScheme = dark ? 'dark' : 'light';
       
-      const WEIGHTS = {
-        userOverride: 100, 
-        localStorage: 60,
-        ambientLight: 40, 
-        osPreference: 30, 
-        timeOfDay: 20, 
-        battery: 20, 
+      const meta = document.querySelector('meta[name="theme-color"]') ??
+        (() => {
+          const m = document.createElement('meta');
+          m.name = 'theme-color';
+          document.head.appendChild(m);
+          return m;
+        })();
+      meta.content = dark ? '#0d1117' : '#f0f4f9';
+      
+      syncToggleUI(dark); // theme বদলালেই toggle sync
+      
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'THEME_CHANGE',
+          theme: dark ? 'dark' : 'light',
+          source,
+        });
+      }
+    }
+    
+    function evaluate() {
+      if (_manualSet) return;
+      
+      let score = 0;
+      for (const [key, val] of Object.entries(_signals)) {
+        if (val === null || val === undefined) continue;
+        score += val * WEIGHTS[key];
+      }
+      
+      // score > 0 (strictly) হলেই dark, tie-break এ light
+      applyTheme(score > 0, 'auto');
+    }
+    
+    function initOsPreference() {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = e => {
+        _signals.osPreference = e.matches ? 1 : -1;
+        evaluate();
       };
-      
-      let _signals = {};
-      let _listeners = []; 
-      let _manualSet = false;
-      
-      function applyTheme(dark, source = 'auto') {
-        const root = document.documentElement;
-        root.setAttribute('data-theme', dark ? 'dark' : 'light');
-        root.style.colorScheme = dark ? 'dark' : 'light';
-        
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'THEME_CHANGE',
-            theme: dark ? 'dark' : 'light',
-            source,
-          });
-        }
-        
-        const meta = document.querySelector('meta[name="theme-color"]') ??
-          (() => {
-            const m = document.createElement('meta');
-            m.name = 'theme-color';
-            document.head.appendChild(m);
-            return m;
-          })();
-        meta.content = dark ? '#0d1117' : '#f0f4f9';
-        
+      handler(mq);
+      mq.addEventListener('change', handler);
+      _listeners.push(() => mq.removeEventListener('change', handler));
+    }
+    
+    function initTimeOfDay() {
+      function check() {
+        const h = new Date().getHours();
+        _signals.timeOfDay = (h >= 20 || h < 6) ? 1 : -1;
+        evaluate();
       }
+      check();
+      const id = setInterval(check, 10 * 60 * 1000);
+      _listeners.push(() => clearInterval(id));
+    }
+    
+    function initAmbientLight() {
+      if (!('AmbientLightSensor' in window)) return;
       
-      function evaluate() {
-        if (_manualSet) return; 
-        
-        let score = 0;
-        const log = {};
-        
-        for (const [key, val] of Object.entries(_signals)) {
-          if (val === null || val === undefined) continue;
-          const contribution = val * WEIGHTS[key]; 
-          score += contribution;
-          log[key] = { val, contribution };
-        }
-        
-        applyTheme(score >= 0, 'auto');
-      }
+      navigator.permissions.query({ name: 'ambient-light-sensor' })
+        .then(result => {
+          if (result.state === 'denied') return;
+          try {
+            const sensor = new AmbientLightSensor({ frequency: 0.2 });
+            sensor.addEventListener('reading', () => {
+              const lux = sensor.illuminance;
+              _signals.ambientLight = lux < 50 ? 1 : lux > 200 ? -1 : 0;
+              evaluate();
+            });
+            sensor.start();
+            _listeners.push(() => sensor.stop());
+          } catch (e) {}
+        })
+        .catch(() => {});
+    }
+    
+    function initBattery() {
+      if (!navigator.getBattery) return;
       
-      function initOsPreference() {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        const handler = e => {
-          _signals.osPreference = e.matches ? 1 : -1;
-          evaluate();
-        };
-        handler(mq);
-        mq.addEventListener('change', handler);
-        _listeners.push(() => mq.removeEventListener('change', handler));
-      }
-      
-      function initTimeOfDay() {
+      navigator.getBattery().then(battery => {
         function check() {
-          const h = new Date().getHours();
-          _signals.timeOfDay = (h >= 20 || h < 6) ? 1 : -1;
+          _signals.battery = (!battery.charging && battery.level < 0.2) ? 1 : 0;
           evaluate();
         }
         check();
-        const id = setInterval(check, 10 * 60 * 1000);
-        _listeners.push(() => clearInterval(id));
-      }
+        battery.addEventListener('levelchange', check);
+        battery.addEventListener('chargingchange', check);
+      }).catch(() => {});
+    }
+    
+    function initStorage() {
+      const saved = localStorage.getItem('theme-preference');
+      if (saved === 'dark') _signals.localStorage = 1;
+      else if (saved === 'light') _signals.localStorage = -1;
+      else _signals.localStorage = undefined;
+    }
+    
+    function toggle() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
       
-      function initAmbientLight() {
-        if (!('AmbientLightSensor' in window)) return;
-        
-        navigator.permissions.query({ name: 'ambient-light-sensor' })
-          .then(result => {
-            if (result.state === 'denied') return;
-            
-            try {
-              const sensor = new AmbientLightSensor({ frequency: 0.2 }); 
-              sensor.addEventListener('reading', () => {
-                const lux = sensor.illuminance;
-                if (lux < 50) _signals.ambientLight = 1;
-                else if (lux > 200) _signals.ambientLight = -1;
-                else _signals.ambientLight = 0; 
-                evaluate();
-              });
-              sensor.start();
-              _listeners.push(() => sensor.stop());
-            } catch (e) {
-            }
-          })
-          .catch(() => {});
-      }
+      _manualSet = true;
+      _signals.userOverride = next === 'dark' ? 1 : -1;
+      _signals.localStorage = _signals.userOverride;
       
-      function initBattery() {
-        if (!navigator.getBattery) return;
-        
-        navigator.getBattery().then(battery => {
-          function check() {
-            _signals.battery = (!battery.charging && battery.level < 0.2) ? 1 : 0;
-            evaluate();
-          }
-          check();
-          battery.addEventListener('levelchange', check);
-          battery.addEventListener('chargingchange', check);
-        }).catch(() => {});
-      }
+      localStorage.setItem('theme-preference', next);
+      applyTheme(next === 'dark', 'manual'); // syncToggleUI এখানেই হবে
+    }
+    
+    function resetToAuto() {
+      _manualSet = false;
+      _signals.userOverride = undefined;
+      _signals.localStorage = undefined;
+      localStorage.removeItem('theme-preference');
+      evaluate(); // evaluate এ applyTheme → syncToggleUI
+    }
+    
+    function init(toggleEl) {
+      _toggleEl = toggleEl ?? document.getElementById('darkModeToggle');
       
-      function initStorage() {
-        const saved = localStorage.getItem('theme-preference');
-        if (saved === 'dark') _signals.localStorage = 1;
-        if (saved === 'light') _signals.localStorage = -1;
-      }
+      initStorage();
+      initOsPreference();
+      initTimeOfDay();
+      initAmbientLight();
+      initBattery();
       
-      function toggle() {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        
+      if (_signals.localStorage !== undefined) {
         _manualSet = true;
-        _signals.userOverride = next === 'dark' ? 1 : -1;
-        _signals.localStorage = _signals.userOverride;
-        
-        localStorage.setItem('theme-preference', next);
-        applyTheme(next === 'dark', 'manual');
-      }
-      
-      function resetToAuto() {
-        _manualSet = false;
-        _signals.userOverride = undefined;
-        _signals.localStorage = undefined;
-        localStorage.removeItem('theme-preference');
+        _signals.userOverride = _signals.localStorage;
+        applyTheme(_signals.userOverride === 1, 'saved');
+      } else {
         evaluate();
       }
       
-      function init() {
-        initStorage();
-        initOsPreference();
-        initTimeOfDay();
-        initAmbientLight();
-        initBattery();
-        
-        if (_signals.localStorage !== undefined) {
-          _manualSet = true;
-          _signals.userOverride = _signals.localStorage;
-          applyTheme(_signals.userOverride === 1, 'saved');
-        } else {
-          evaluate();
-        }
+      // toggle listener এখানে, init এর ভেতরে — race condition নেই
+      if (_toggleEl) {
+        _toggleEl.addEventListener('change', () => {
+          ThemeSystem.toggle();
+          // syncToggleUI toggle() এর ভেতরেই হয়, তবু
+          // browser এর checked state নিশ্চিত করতে:
+          _toggleEl.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+        });
       }
-      
-      function destroy() {
-        _listeners.forEach(fn => fn());
-        _listeners = [];
-      }
-      
-      return { init, toggle, resetToAuto, destroy };
-    })();
+    }
     
-    document.addEventListener('DOMContentLoaded', () => ThemeSystem.init());
-    const darkToggle = document.getElementById('darkModeToggle');
+    function destroy() {
+      _listeners.forEach(fn => fn());
+      _listeners = [];
+      _toggleEl = null;
+    }
     
-    darkToggle.checked = localStorage.getItem('theme-preference') === 'dark';
-    
-    darkToggle.addEventListener('change', () => {
-      ThemeSystem.toggle();
-      darkToggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
-    });
-    
-  </script>
+    return { init, toggle, resetToAuto, destroy };
+  })();
+  
+  // একটাই entry point, DOMContentLoaded এ সব একসাথে
+  document.addEventListener('DOMContentLoaded', () => {
+    ThemeSystem.init(); // toggle element init এর ভেতরে নেওয়া হয়
+  });
+</script>
       
 </body>
 </html>
