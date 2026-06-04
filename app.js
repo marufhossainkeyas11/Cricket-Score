@@ -810,24 +810,60 @@ function saveSnap() {
 }
 
 function undoLast() {
-  if (!G.match || !G.match.history.length) return;
-
+  if (!G.match) return;
+  
   const bowlerModalVisible = $('bowlerModal').style.display !== 'none';
   if (bowlerModalVisible) closeModal('bowlerModal');
-
+  
+  if (G.match.innings === 2 && G.match.history.length === 0 && G.inn1MatchState) {
+    
+    const inn1Match = JSON.parse(G.inn1MatchState);
+    
+    const s = G.setup;
+    [s.teamA, s.teamB] = [s.teamB, s.teamA];
+    
+    G.match = inn1Match;
+    G.inn1 = null;
+    G.inn1FullData = null;
+    G.inn1MatchState = null;
+    
+    $('inn2Btn').style.display = 'none';
+    $('tgtBlk').style.display = 'none';
+    $('rrrBlk').style.display = 'none';
+    $('innLbl').textContent = '1st Innings';
+    
+    if (G.match.history.length > 0) {
+      const snap = JSON.parse(G.match.history.pop());
+      const hist = G.match.history;
+      Object.assign(G.match, snap);
+      G.match.doneOvers = snap.doneOvers || [];
+      G.match.history = hist;
+      G.match.done = false;
+    }
+    
+    renderHeader();
+    renderAll();
+    saveState();
+    showToast('1st innings last ball undone', true);
+    return;
+  }
+  
+  if (!G.match.history.length) return;
+  
   const snap = JSON.parse(G.match.history.pop());
   const hist = G.match.history;
   Object.assign(G.match, snap);
   G.match.doneOvers = snap.doneOvers || [];
-  G.match.history   = hist;
-
+  G.match.history = hist;
+  
   if (G.match.needBowler && !G.match.done && !bowlerModalVisible) {
     setTimeout(() => openBowlerModal(), 250);
   }
-
+  
   renderAll();
   saveState();
 }
+
 
 function resultUndo() {
   if (!G.match || !G.match.history.length) return;
@@ -1417,25 +1453,32 @@ function showInn2Modal() {
 function startInn2() {
   closeModal('inn2Modal');
   const s = G.setup;
-
+  
+  G.inn1MatchState = JSON.stringify(G.match);
+  
   G.inn1FullData = JSON.parse(JSON.stringify({
-    runs: G.match.runs, wickets: G.match.wickets, balls: G.match.balls,
-    extras: G.match.extras, bat: G.match.bat,
-    bowlMap: G.match.bowlMap, bowlOrder: G.match.bowlOrder,
+    runs: G.match.runs,
+    wickets: G.match.wickets,
+    balls: G.match.balls,
+    extras: G.match.extras,
+    bat: G.match.bat,
+    bowlMap: G.match.bowlMap,
+    bowlOrder: G.match.bowlOrder,
   }));
-
+  
   [s.teamA, s.teamB] = [s.teamB, s.teamA];
-
+  
   initMatch(2);
   $('inn2Btn').style.display = 'none';
   $('tgtBlk').style.display = 'flex';
   $('rrrBlk').style.display = 'flex';
-  $('sbTgt').textContent    = G.inn1.runs + 1;
-  $('innLbl').textContent   = '2nd Innings';
-
+  $('sbTgt').textContent = G.inn1.runs + 1;
+  $('innLbl').textContent = '2nd Innings';
+  
   saveState();
   setTimeout(() => openOpeningBatsmenModal(), 200);
 }
+
 
 // ═══════════════════════════════════════════════
 //  RESULT
