@@ -1617,7 +1617,7 @@ function showResultScreen() {
     <div class="rs-wrap" id="rs-capture">
       <div class="rs-glow"></div>
       <div class="rs-brand">
-        <img src="./logo.png" alt="Logo" class="rs-brand-logo">
+        <img src="./favicon.svg" alt="Logo" class="rs-brand-logo">
         <div class="rs-brand-text">
           <div class="rs-brand-name"><span class="bc">CRICKET</span> <span class="bs">SCORE</span></div>
           <div class="rs-brand-tagline-wrapper">
@@ -2042,7 +2042,7 @@ async function downloadSummary() {
   ctx.beginPath(); ctx.moveTo(0, HDR_H); ctx.lineTo(W, HDR_H); ctx.stroke();
 
   // Logo
-  const logoImg = new Image(); logoImg.src = './logo.png';
+  const logoImg = new Image(); logoImg.src = './favicon.svg';
   await new Promise(res => { logoImg.onload = res; logoImg.onerror = res; setTimeout(res, 600); });
   const LOGO_H = 54, logoY = (HDR_H - LOGO_H) / 2;
   let logoDrawW = LOGO_H;
