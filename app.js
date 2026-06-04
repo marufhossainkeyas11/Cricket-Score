@@ -643,22 +643,36 @@ function ball(runs, extra) {
   saveState();
 }
 
-function wicketBall(outIdx, howOut, newBatIdx) {
+function wicketBall(outIdx, howOut, newBatIdx, roRuns = 0, roByeRuns = 0, nextStriker = null) {
   const m = G.match;
   saveSnap();
-
+  
+  const totalExtra = roRuns + roByeRuns;
+  
+  if (roRuns > 0) {
+    m.runs += roRuns;
+    m.bat[m.striker].runs += roRuns;
+    m.bat[m.striker].fours += roRuns === 4 ? 1 : 0;
+  }
+  
+  if (roByeRuns > 0 && G.setup.byeAllowed !== false) {
+    m.runs += roByeRuns;
+    m.extras.bye = (m.extras.bye || 0) + roByeRuns;
+  }
+  
   m.bat[outIdx].out = true;
   m.bat[outIdx].howOut = howOut;
-  m.bat[outIdx].balls++;
+  if (outIdx === m.striker) m.bat[outIdx].balls++;
+  
   m.wickets++;
-
+  
   if (howOut !== 'Run Out' && m.curBowler)
     m.bowlMap[m.curBowler].wickets++;
-
-  addBowlerBall(0, true, null);
+  
+  addBowlerBall(totalExtra, true, null);
   m.balls++;
-  m.curOver.push({ runs: 0, extra: null, isLegal: true, isW: true });
-
+  m.curOver.push({ runs: totalExtra, extra: null, isLegal: true, isW: true });
+  
   if (newBatIdx !== null) {
     m.bat[newBatIdx].notYet = false;
     if (m.striker === outIdx) {
@@ -669,14 +683,22 @@ function wicketBall(outIdx, howOut, newBatIdx) {
     m.lastNewBatIdx = newBatIdx;
   } else {
     if (m.striker === outIdx) {
-      m.striker    = m.nonStriker !== -1 ? m.nonStriker : outIdx;
+      m.striker = m.nonStriker !== -1 ? m.nonStriker : outIdx;
       m.nonStriker = -1;
     } else {
       m.nonStriker = -1;
     }
     m.lastNewBatIdx = null;
   }
-
+  
+  if (howOut === 'Run Out' && nextStriker !== null && m.nonStriker !== -1) {
+    if (m.striker !== nextStriker) {
+      const tmp = m.striker;
+      m.striker = m.nonStriker;
+      m.nonStriker = tmp;
+    }
+  }
+  
   flash('r');
   checkOverDone();
   checkInningsDone();
@@ -1016,62 +1038,217 @@ function showWicketModal(forceDis) {
   const m = G.match;
   if (!m || m.done || m.needBowler) return;
   pickedDis = null;
+  window._roRuns    = 0;
+  window._roByeRuns = 0;
+  window._roEnd     = null;
+  window._wkStrikeIdx = null;
 
-  const sel = $('wkBat');
-  sel.innerHTML = '';
-  if (m.nonStriker !== -1) {
-    [m.striker, m.nonStriker].forEach(i => sel.appendChild(new Option(m.bat[i].name, i)));
-  } else {
-    sel.appendChild(new Option(m.bat[m.striker].name, m.striker));
-  }
+  $('wkRunOutSection').style.display = 'none';
+  $('wkStrikeFld').style.display     = 'none';
 
-  const nsel = $('newBat');
-  nsel.innerHTML = '';
-  const avail = m.bat.filter(b => b.notYet && !b.out);
-  avail.forEach(b => nsel.appendChild(new Option(b.name, m.bat.indexOf(b))));
-  $('newBatFld').style.display = avail.length ? 'block' : 'none';
+  refreshNewBatDropdown();
 
   const lbwBtn = $('lbwOrBoundaryBtn');
   if (G.setup.shortCric) {
     lbwBtn.textContent = 'Over Boundary';
-    lbwBtn.onclick = function() { pickDis(this, 'Over Boundary'); };
+    lbwBtn.onclick = function () { pickDis(this, 'Over Boundary'); };
   } else {
     lbwBtn.textContent = 'LBW';
-    lbwBtn.onclick = function() { pickDis(this, 'LBW'); };
+    lbwBtn.onclick = function () { pickDis(this, 'LBW'); };
   }
-
-  document.querySelectorAll('.rb.six').forEach(btn => {
-    btn.disabled = !!G.setup.shortCric;
-    btn.style.opacity = G.setup.shortCric ? '0.35' : '';
-    btn.title = G.setup.shortCric ? '6 = OUT in Short Cricket' : '';
-  });
 
   document.querySelectorAll('#wkModal .db').forEach(b => b.classList.remove('sel'));
 
   if (forceDis === 'overBoundary') {
     pickedDis = 'Over Boundary';
-    sel.value = m.striker;
     setTimeout(() => {
-      lbwBtn.classList.add('sel');
+      $('lbwOrBoundaryBtn').classList.add('sel');
+      updateWkStrikeField();
     }, 50);
   }
 
   openModal('wkModal');
 }
 
+function refreshNewBatDropdown() {
+  const m     = G.match;
+  const nsel  = $('newBat');
+  nsel.innerHTML = '';
+  const avail = m.bat.filter(b => b.notYet && !b.out);
+  avail.forEach(b => nsel.appendChild(new Option(b.name, m.bat.indexOf(b))));
+  $('newBatFld').style.display = avail.length ? 'block' : 'none';
+}
+
 function pickDis(btn, type) {
   pickedDis = type;
   document.querySelectorAll('#wkModal .db').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
+
+  const m = G.match;
+
+  if (type === 'Run Out') {
+    $('wkRunOutSection').style.display = 'block';
+
+    const sel = $('wkBat');
+    sel.innerHTML = '';
+    if (m.nonStriker !== -1) {
+      [m.striker, m.nonStriker].forEach(i =>
+        sel.appendChild(new Option(m.bat[i].name, i))
+      );
+    } else {
+      sel.appendChild(new Option(m.bat[m.striker].name, m.striker));
+    }
+    sel.onchange = () => {
+      window._roEnd = null;
+      buildRoEndGrid();
+      updateWkStrikeField();
+    };
+
+    window._roRuns = 0;
+    const roRunGrid = $('roRunGrid');
+    roRunGrid.innerHTML = '';
+    [0, 1, 2, 3, 4].forEach(r => {
+      const b2 = document.createElement('button');
+      b2.className   = 'db' + (r === 0 ? ' sel' : '');
+      b2.textContent = String(r);
+      b2.onclick = () => {
+        roRunGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+        b2.classList.add('sel');
+        window._roRuns = r;
+        buildRoByeGrid();
+        updateWkStrikeField();
+      };
+      roRunGrid.appendChild(b2);
+    });
+
+    window._roByeRuns = 0;
+    buildRoByeGrid();
+
+    window._roEnd = null;
+    buildRoEndGrid();
+
+  } else {
+    $('wkRunOutSection').style.display = 'none';
+  }
+
+  refreshNewBatDropdown();
+  updateWkStrikeField();
+}
+
+function buildRoEndGrid() {
+  const m      = G.match;
+  const outIdx = +$('wkBat').value;
+  const isStriker = outIdx === m.striker;
+
+  const grid = $('roEndGrid');
+  grid.innerHTML = '';
+
+  const endA = { label: 'Batting End', value: 'batting' };
+  const endB = { label: 'Bowling End', value: 'bowling' };
+
+  const defaultEnd = 'bowling';
+
+  [endA, endB].forEach(({ label, value }) => {
+    const b2 = document.createElement('button');
+    b2.className   = 'db' + (value === defaultEnd ? ' sel' : '');
+    b2.textContent = label;
+    b2.onclick = () => {
+      grid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+      b2.classList.add('sel');
+      window._roEnd = value;
+      updateWkStrikeField();
+    };
+    grid.appendChild(b2);
+  });
+
+  if (window._roEnd === null) window._roEnd = defaultEnd;
+}
+
+function buildRoByeGrid() {
+  const byeAllowed = G.setup.byeAllowed !== false;
+  const byeFld     = $('roByeFld');
+
+  if (!byeAllowed) {
+    byeFld.style.display = 'none';
+    window._roByeRuns    = 0;
+    return;
+  }
+
+  byeFld.style.display = 'block';
+  const grid = $('roByeGrid');
+  grid.innerHTML = '';
+  window._roByeRuns = 0;
+
+  [0, 1, 2, 3, 4].forEach(r => {
+    const b2 = document.createElement('button');
+    b2.className   = 'db' + (r === 0 ? ' sel' : '');
+    b2.textContent = r === 0 ? '0' : String(r);
+    b2.onclick = () => {
+      grid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+      b2.classList.add('sel');
+      window._roByeRuns = r;
+    };
+    grid.appendChild(b2);
+  });
+}
+
+function updateWkStrikeField() {
+  $('wkStrikeFld').style.display = 'none';
+
+  if (pickedDis !== 'Run Out') return;
+
+  const m         = G.match;
+  const outIdx    = +$('wkBat').value;
+  const nsel      = $('newBat');
+  const newBatIdx = nsel.options.length > 0 ? +nsel.value : null;
+  const roEnd     = window._roEnd;
+
+  if (roEnd === null || newBatIdx === null) {
+    window._wkStrikeIdx = null;
+    return;
+  }
+
+  const strikerIsOut = outIdx === m.striker;
+  let nextStrikerIdx;
+
+  if (strikerIsOut) {
+    if (roEnd === 'batting') {
+      nextStrikerIdx = newBatIdx;
+    } else {
+      nextStrikerIdx = m.nonStriker !== -1 ? m.nonStriker : newBatIdx;
+    }
+  } else {
+    if (roEnd === 'bowling') {
+      nextStrikerIdx = m.striker;
+    } else {
+      nextStrikerIdx = newBatIdx;
+    }
+  }
+
+  window._wkStrikeIdx = nextStrikerIdx;
 }
 
 function confirmWicket() {
   if (!pickedDis) { shakeModal('wkModal'); showToast('Select dismissal type'); return; }
-  const outIdx    = +$('wkBat').value;
+
+  const m        = G.match;
+  const isRunOut = pickedDis === 'Run Out';
+
+  if (isRunOut && window._roEnd === null) {
+    shakeModal('wkModal');
+    showToast('Select which end the batter was run out');
+    return;
+  }
+
+  const outIdx    = isRunOut ? +$('wkBat').value : m.striker;
   const nsel      = $('newBat');
   const newBatIdx = nsel.options.length > 0 ? +nsel.value : null;
+  const roRuns    = isRunOut ? (window._roRuns    || 0) : 0;
+  const roByeRuns = isRunOut ? (window._roByeRuns || 0) : 0;
+  const nextStriker = isRunOut ? window._wkStrikeIdx : null;
+
   closeModal('wkModal');
-  wicketBall(outIdx, pickedDis, newBatIdx);
+  wicketBall(outIdx, pickedDis, newBatIdx, roRuns, roByeRuns, nextStriker);
 }
 
 // ═══════════════════════════════════════════════
