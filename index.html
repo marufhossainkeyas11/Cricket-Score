@@ -381,19 +381,16 @@
   <div class="modal">
     <div class="modal-ttl">
        <svg xmlns="http://www.w3.org/2000/svg" width="26px" height="26px" style="transform:translateY(4px)" viewBox="0 0 24 24">
-        	<path d="M0 0h24v24H0z" fill="none" />
-        	<g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
-        		<path d="m6 2l4 2m4-1l4-1" />
-        		<circle cx="12" cy="13" r="2" />
-        		<path d="M6 7v15m7-15l-.3 4.1m-.2 3.8L12 22m6-15v15" />
-        	</g>
+          <path d="M0 0h24v24H0z" fill="none" />
+          <g fill="currentColor" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+            <path d="m6 2l4 2m4-1l4-1" />
+            <circle cx="12" cy="13" r="2" />
+            <path d="M6 7v15m7-15l-.3 4.1m-.2 3.8L12 22m6-15v15" />
+          </g>
       </svg>
       Wicket!
     </div>
-    <div class="mf">
-      <label>Batsman Out</label>
-      <select id="wkBat"></select>
-    </div>
+
     <div class="mf">
       <label>Dismissal</label>
       <div class="dis-grid">
@@ -405,10 +402,37 @@
         <button class="db" onclick="pickDis(this,'Hit Wicket')">Hit Wicket</button>
       </div>
     </div>
+
+    <!-- Run Out only fields -->
+    <div id="wkRunOutSection" style="display:none">
+      <div class="mf">
+        <label>Who got Run Out?</label>
+        <select id="wkBat"></select>
+      </div>
+      <div class="mf">
+        <label>Dismissed at which end?</label>
+        <div class="dis-grid" id="roEndGrid"></div>
+      </div>
+      <div class="mf">
+        <label>Runs completed before Run Out</label>
+        <div class="dis-grid" id="roRunGrid"></div>
+      </div>
+      <div class="mf" id="roByeFld" style="display:none">
+        <label>Extra bye runs (if any)</label>
+        <div class="dis-grid" id="roByeGrid"></div>
+      </div>
+    </div>
+
     <div class="mf" id="newBatFld">
       <label>New Batsman</label>
-      <select id="newBat"></select>
+      <select id="newBat" onchange="updateWkStrikeField()"></select>
     </div>
+
+    <div class="mf" id="wkStrikeFld" style="display:none">
+      <label>Who faces next ball?</label>
+      <div class="dis-grid" id="wkStrikeGrid"></div>
+    </div>
+
     <div class="mact">
       <button class="mbtn-c" onclick="closeModal('wkModal')">Cancel</button>
       <button class="mbtn-ok" onclick="confirmWicket()">Confirm</button>
