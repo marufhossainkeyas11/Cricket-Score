@@ -1476,7 +1476,20 @@ function renderScore() {
   $('sbRuns').textContent = m.runs;
   $('sbWk').textContent   = `/${m.wickets}`;
   $('sbOv').textContent   = `${ov}.${bl}`;
-  $('sbRR').textContent   = rr;
+
+  if (m.innings === 2 && G.inn1) {
+    const ballsLeft = (s.overs * 6) - m.balls;
+    const runsNeeded = G.inn1.runs + 1 - m.runs;
+    const rrr = ballsLeft > 0 && runsNeeded > 0 ?
+      ((runsNeeded / ballsLeft) * 6).toFixed(2) :
+      runsNeeded <= 0 ? '✓' : '—';
+    $('sbRR').textContent = rrr;
+    $('sbRRLabel').textContent = 'RRR';
+  } else {
+    $('sbRR').textContent = rr;
+    $('sbRRLabel').textContent = 'CRR';
+  }
+  
   $('progFill').style.width = Math.min((m.balls / (s.overs * 6)) * 100, 100) + '%';
 
   if (m.innings === 2 && G.inn1) {
