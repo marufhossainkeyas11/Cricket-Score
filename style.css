@@ -21,15 +21,15 @@
   --t2:    #8b949e;
   --t3:    #4a5568;
   --bdr:   rgba(255,255,255,0.07);
-  --overlay-sm:  rgba(255, 255, 255, 0.08);
-  --overlay-md:  rgba(255, 255, 255, 0.16); 
-  --overlay-lg:  rgba(255, 255, 255, 0.24);
+  --o-sm:  rgba(255, 255, 255, 0.08);
+  --o-md:  rgba(255, 255, 255, 0.16); 
+  --o-lg:  rgba(255, 255, 255, 0.24);
   --r:     12px;
   --rs:    8px;
   --f:     'Inter', sans-serif;
   --m:     'JetBrains Mono', monospace;
   --d:     'Bebas Neue', sans-serif;
-  --trans: 0.15s ease;
+  --trans: 0.2s ease;
 }
 
 [data-theme="light"] {
@@ -46,9 +46,9 @@
   --t2:   #3d4f6b;
   --t3:   #7a90b0;
   --bdr:  rgba(0, 20, 60, 0.09);
-  --overlay-sm: rgba(0, 20, 60, 0.1);
-  --overlay-md: rgba(0, 20, 60, 0.13);
-  --overlay-lg: rgba(0, 20, 60, 0.2);
+  --o-sm: rgba(0, 20, 60, 0.1);
+  --o-md: rgba(0, 20, 60, 0.13);
+  --o-lg: rgba(0, 20, 60, 0.2);
 }
 
 /* ── RESET ──────────────────────────────────── */
@@ -57,6 +57,12 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  transition: 
+    color 0.2 ease,
+    background-color 0.2 ease,
+    border-color 0.2 ease,
+    fill 0.2 ease,
+    stroke 0.2 ease;
 }
 
 body {
@@ -813,7 +819,7 @@ button { cursor: pointer; }
 }
 
 /* Ball types */
-.bd  { background: var(--overlay-md);         color: var(--t3);  border-color: var(--overlay-md);}
+.bd  { background: var(--o-md);         color: var(--t3);  border-color: var(--o-md);}
 .br  { background: rgba(34,197,94,.1);        color: #4ade80;    border-color: rgba(34,197,94,.3); }
 .b4  { background: rgba(21,101,192,.15);      color: #60a5fa;    border-color: rgba(21,101,192,.5); }
 .b6  { background: rgba(240,180,41,.12);      color: var(--ylw); border-color: rgba(240,180,41,.4); }
@@ -1656,6 +1662,10 @@ modal, .modal-bg {
   justify-content: center;
   font-size: 15px;
   transition: background var(--trans), border-color var(--trans);
+  filter: grayscale(1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  background: rgba(128, 128, 128, 0.12);
+  border-color: rgba(128, 128, 128, 0.25);
 }
 
 .rule-text {
