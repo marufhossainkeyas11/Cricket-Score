@@ -704,8 +704,8 @@
       localStorage.setItem(KEY, Date.now() + 3 * 864e5); // 3 দিন cooldown
     });
   
-    window.addEventListener('appinstalled', hide);
     window.addEventListener('appinstalled', () => {
+      hide();
       window.umami?.track('pwa-installed');
     });
   })();
