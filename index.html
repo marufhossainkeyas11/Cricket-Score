@@ -705,6 +705,9 @@
     });
   
     window.addEventListener('appinstalled', hide);
+    window.addEventListener('appinstalled', () => {
+      window.umami?.track('pwa-installed');
+    });
   })();
 </script>
 <script>
