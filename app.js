@@ -1658,7 +1658,38 @@ function showResultScreen() {
   rs.classList.add('active');
   G.screen = 'result';
   saveState();
+
+  if (!G.match.resultTracked) {
+    G.match.resultTracked = true;
+    G.match.pendingTrack = {
+      result: winnerTeam === 'Tie' ? 'tie' : (winnerTeam ? 'win' : 'innings_complete'),
+      summary: winnerMsg,
+      team1: s.teamA,
+      team2: s.teamB,
+      overs: s.overs
+    };
+  }
 }
+
+
+
+function trackMatchComplete(result, summary, team1, team2, overs) {
+  const payload = { name: 'match-complete', data: { result, summary, team1, team2, overs } };
+  const queue = JSON.parse(localStorage.getItem('umami_queue') || '[]');
+  queue.push(payload);
+  localStorage.setItem('umami_queue', JSON.stringify(queue));
+  flushUmamiQueue();
+}
+
+function flushUmamiQueue() {
+  if (!navigator.onLine) return;
+  const queue = JSON.parse(localStorage.getItem('umami_queue') || '[]');
+  if (!queue.length) return;
+  queue.forEach(e => window.umami?.track(e.name, e.data));
+  localStorage.removeItem('umami_queue');
+}
+
+window.addEventListener('online', flushUmamiQueue);
 
 // ═══════════════════════════════════════════════
 //  RENDER
@@ -1874,6 +1905,10 @@ function flash(type) {
 function doReset() { openModal('resetModal'); }
 
 function doNewMatch() {
+  if (G.match?.pendingTrack) {
+    const t = G.match.pendingTrack;
+    trackMatchComplete(t.result, t.summary, t.team1, t.team2, t.overs);
+  }
   closeModal('resetModal');
   clearState();
   tierRows = [];
@@ -1892,6 +1927,10 @@ function doNewMatch() {
 }
 
 function doRematch() {
+  if (G.match?.pendingTrack) {
+    const t = G.match.pendingTrack;
+    trackMatchComplete(t.result, t.summary, t.team1, t.team2, t.overs);
+  }
   closeModal('resetModal');
   const savedSetup = {
     team1:      G.setup.team1,
