@@ -7,7 +7,7 @@
 //    • Version bump = CACHE_VER only. No manual ASSETS list needed.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_VER   = 'v2.2.6';   
+const CACHE_VER   = 'v2.2.7';   
 const SHELL_KEY   = `cs-shell-${CACHE_VER}`;
 const MEDIA_KEY   = `cs-media-${CACHE_VER}`;
 const FONT_KEY    = `cs-fonts-${CACHE_VER}`;
@@ -92,7 +92,11 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
 
   // GET ছাড়া কিছু handle করব না
-  if (req.method !== 'GET') return;
+  if (req.method !== 'GET') {
+  // Umami tracking POST pass through করো
+  if (req.url.includes('umami') || req.url.includes('/api/send')) return;
+  return;
+  }
 
   // ── বাইরের origin (CDN, API, fonts.googleapis.com) ─────
   if (url.origin !== self.location.origin) {
