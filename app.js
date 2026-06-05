@@ -1385,10 +1385,15 @@ function openOpeningBatsmenModal() {
   G._openingPicks = [];
 
   m.bat.forEach((b, i) => {
-    const row = el('div', 'bpl');
+    const row = el('div', 'bpl bat-pick-row');
     row.innerHTML = `
-      <div class="bpl-l"><span class="bpl-nm">${b.name}</span></div>
-      <div class="bpl-q" id="bat-role-${i}"></div>`;
+      <div class="bat-pick-name">${b.name}</div>
+      <div class="bat-pick-badge" id="bat-role-${i}"></div>
+      <div class="bat-pick-check" id="bat-check-${i}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>`;
     row.onclick = () => pickOpeningBat(i, row);
     list.appendChild(row);
   });
@@ -1415,9 +1420,31 @@ function pickOpeningBat(idx, row) {
 
 function refreshOpeningLabels() {
   const picks = G._openingPicks;
-  document.querySelectorAll('[id^="bat-role-"]').forEach(e => (e.textContent = ''));
-  if (picks[0] !== undefined) $(`bat-role-${picks[0]}`).textContent = '⚡ Striker';
-  if (picks[1] !== undefined) $(`bat-role-${picks[1]}`).textContent = '🏏 Non-Striker';
+
+  document.querySelectorAll('.bat-pick-row').forEach(row => {
+    row.classList.remove('pick-striker', 'pick-nonstriker');
+  });
+  document.querySelectorAll('[id^="bat-role-"]').forEach(e => {
+    e.innerHTML = '';
+    e.className = 'bat-pick-badge';
+  });
+
+  if (picks[0] !== undefined) {
+    const row = document.querySelectorAll('.bat-pick-row')[picks[0]];
+    row?.classList.add('pick-striker');
+    const badge = $(`bat-role-${picks[0]}`);
+    if (badge) {
+      badge.innerHTML = `<span class="role-pill striker-pill">⚡ Striker</span>`;
+    }
+  }
+  if (picks[1] !== undefined) {
+    const row = document.querySelectorAll('.bat-pick-row')[picks[1]];
+    row?.classList.add('pick-nonstriker');
+    const badge = $(`bat-role-${picks[1]}`);
+    if (badge) {
+      badge.innerHTML = `<span class="role-pill nonstriker-pill">🏏 Non-Striker</span>`;
+    }
+  }
 }
 
 function confirmOpeningBat() {
