@@ -1199,7 +1199,14 @@ function pickDis(btn, type) {
         roRunGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
         b2.classList.add('sel');
         window._roRuns = r;
-        buildRoByeGrid();
+        if (r > 0) {
+          window._roByeRuns = 0;
+          const byeGrid = document.getElementById('roByeGrid');
+          if (byeGrid) {
+            byeGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+            byeGrid.querySelector('.db')?.classList.add('sel');
+          }
+        }
         updateWkStrikeField();
       };
       roRunGrid.appendChild(b2);
@@ -1271,6 +1278,14 @@ function buildRoByeGrid() {
       grid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
       b2.classList.add('sel');
       window._roByeRuns = r;
+      if (r > 0) {
+        window._roRuns = 0;
+        const roRunGrid = document.getElementById('roRunGrid');
+        if (roRunGrid) {
+          roRunGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+          roRunGrid.querySelector('.db')?.classList.add('sel');
+        }
+      }
     };
     grid.appendChild(b2);
   });
