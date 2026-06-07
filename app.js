@@ -927,11 +927,12 @@ function showExtraModal(type) {
   batGrid.innerHTML = '';
   runGrid.innerHTML = '';
 
-  if (type === 'noball') {
+    if (type === 'noball') {
     batFld.style.display = 'block';
     $('extraRunLabel').textContent = 'Total = bat runs + 1 NB';
   
     const isShort = !!G.setup.shortCric;
+    const byeAllowed = G.setup.byeAllowed !== false;
   
     [0, 1, 2, 3, 4, 6].forEach(r => {
       const btn = document.createElement('button');
@@ -946,15 +947,61 @@ function showExtraModal(type) {
         btn.onclick = () => {
           batGrid.querySelectorAll('.db').forEach(b => b.classList.remove('sel'));
           btn.classList.add('sel');
-          extraState.batRuns   = r;
-          extraState.byeRuns   = 0;
+          extraState.batRuns = r;
           extraState.totalRuns = r + 1;
           $('extraRunLabel').textContent = `Total = ${r} bat + 1 NB = ${r + 1} runs`;
           buildTotalDisplay(r + 1);
+  
+          if (r > 0) {
+            extraState.byeRuns = 0;
+            const bg = $('nbByeGrid');
+            if (bg) {
+              bg.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+              bg.querySelector('.db')?.classList.add('sel');
+            }
+          }
         };
       }
       batGrid.appendChild(btn);
     });
+  
+    if (byeAllowed) {
+      const byeFld = document.createElement('div');
+      byeFld.className = 'mf';
+      byeFld.style.marginTop = '10px';
+      byeFld.innerHTML = '<label>Bye Runs (bat missed, batters ran)</label>';
+      const byeGrid = document.createElement('div');
+      byeGrid.className = 'dis-grid';
+      byeGrid.id = 'nbByeGrid';
+  
+      [0, 1, 2, 3, 4].forEach(r => {
+        const b2 = document.createElement('button');
+        b2.className = 'db' + (r === 0 ? ' sel' : '');
+        b2.textContent = String(r);
+        b2.onclick = () => {
+          byeGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+          b2.classList.add('sel');
+          extraState.byeRuns = r;
+          extraState.totalRuns = r + 1;
+          $('extraRunLabel').textContent = `Total = ${r} bye + 1 NB = ${r + 1} runs`;
+          buildTotalDisplay(r + 1);
+  
+          if (r > 0) {
+            extraState.batRuns = 0;
+            batGrid.querySelectorAll('.db').forEach(x => x.classList.remove('sel'));
+            batGrid.querySelector('.db')?.classList.add('sel');
+          }
+        };
+        byeGrid.appendChild(b2);
+      });
+  
+      byeFld.appendChild(byeGrid);
+
+      const modal = $('extraModal').querySelector('.modal');
+      const totalFld = $('extraTotalFld');
+      modal.insertBefore(byeFld, totalFld);
+    }
+  
     extraState.batRuns = 0; extraState.byeRuns = 0; extraState.totalRuns = 1;
     buildTotalDisplay(1);
     
@@ -977,7 +1024,6 @@ function showExtraModal(type) {
       });
       extraState.totalRuns = 1;
     } else {
-      // Bypass modal — direct record
       closeModal('extraModal');
       saveSnap();
       m.runs += 1;
@@ -992,7 +1038,6 @@ function showExtraModal(type) {
     }
 
   } else {
-    // Bye / Leg Bye
     batFld.style.display = 'none';
     $('extraRunLabel').textContent = 'Runs scored';
     [1, 2, 3, 4].forEach(r => {
@@ -1036,14 +1081,17 @@ function confirmExtra() {
   if (type === 'noball') {
     m.extras.noball = (m.extras.noball || 0) + 1;
     if (batRuns > 0) {
-      m.bat[m.striker].runs  += batRuns;
+      m.bat[m.striker].runs += batRuns;
       m.bat[m.striker].fours += batRuns === 4 ? 1 : 0;
       m.bat[m.striker].sixes += batRuns === 6 ? 1 : 0;
     }
-    if (byeAllowed && byeRuns > 0) m.extras.bye = (m.extras.bye || 0) + byeRuns;
+    if (byeAllowed && byeRuns > 0) {
+      m.extras.bye = (m.extras.bye || 0) + byeRuns;
+    }
     addBowlerBall(totalRuns, false, 'noball');
-    if (batRuns % 2 === 1 && !isLastManAlone()) swapBat();
-
+    const swapRuns = batRuns > 0 ? batRuns : byeRuns;
+    if (swapRuns % 2 === 1 && !isLastManAlone()) swapBat();
+  
   } else if (type === 'wide') {
     m.extras.wide = (m.extras.wide || 0) + 1;
     const byeRuns = totalRuns - 1; 
