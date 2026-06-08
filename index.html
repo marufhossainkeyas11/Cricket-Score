@@ -404,10 +404,56 @@
         SCORECARD
       </button>
       <div id="scPanel" style="display:none">
-        <div class="sc-hd">Batting</div>
-        <div id="batSC"></div>
-        <div class="sc-hd mt">Bowling</div>
-        <div id="bowlSC"></div>
+        <!-- Batting section -->
+        <div class="isc-section" id="iscBatSection">
+          <div class="isc-section-hd">
+            <span class="isc-section-title">Batting</span>
+            <span class="isc-section-meta" id="iscBatMeta"></span>
+          </div>
+          <div class="isc-table">
+            <div class="isc-col-hd">
+              <span style="width:116px;flex-shrink:0">Batter</span>
+              <span style="flex:1"></span>
+              <span style="width:34px;text-align:right">R</span>
+              <span style="width:32px;text-align:right">B</span>
+              <span style="width:26px;text-align:right">4s</span>
+              <span style="width:26px;text-align:right">6s</span>
+              <span style="width:42px;text-align:right">SR</span>
+            </div>
+            <div id="iscBatRows"></div>
+          </div>
+        </div>
+      
+        <!-- Extras -->
+        <div class="isc-extras" id="iscExtras"></div>
+      
+        <!-- Over summary -->
+        <div class="isc-overs-wrap" id="iscOversWrap" style="display:none">
+          <div class="isc-section-hd" style="border-radius:var(--rs) var(--rs) 0 0;border:1px solid var(--bdr);border-bottom:none">
+            <span class="isc-section-title">Over Summary</span>
+            <span class="isc-section-meta" id="iscOvMeta"></span>
+          </div>
+          <div class="isc-overs-strip" style="border-radius:0 0 var(--rs) var(--rs)" id="iscOvStrip"></div>
+        </div>
+      
+        <!-- Bowling section -->
+        <div class="isc-section" id="iscBowlSection">
+          <div class="isc-section-hd">
+            <span class="isc-section-title">Bowling</span>
+            <span class="isc-section-meta" id="iscBowlMeta"></span>
+          </div>
+          <div class="isc-table">
+            <div class="isc-col-hd">
+              <span style="width:116px;flex-shrink:0">Bowler</span>
+              <span style="flex:1"></span>
+              <span style="width:38px;text-align:right">Ov</span>
+              <span style="width:30px;text-align:right">R</span>
+              <span style="width:24px;text-align:right">W</span>
+              <span style="width:42px;text-align:right">Eco</span>
+            </div>
+            <div id="iscBowlRows"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
