@@ -105,6 +105,28 @@ button { cursor: pointer; }
   padding: 16px 0 0;
 }
 
+.setup-wrap .brand {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  padding: 24px 0 20px;
+  justify-content: center;
+  background: transparent;
+  pointer-events: none;
+}
+
+.setup-wrap {
+  padding-top: 140px; 
+  position: relative;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+}
+
 /* Brand */
 .brand {
   display: flex;
