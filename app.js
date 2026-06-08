@@ -1963,9 +1963,13 @@ function applyScoringUI() {
 
 function renderHeader() {
   const s = G.setup;
-  $('hdrTeams').textContent = `${s.teamA} vs ${s.teamB}`;
+  $('hdrTeams').innerHTML = `
+    <span class="team-name">${s.teamA}</span>
+    <span class="hdr-vs">vs</span>
+    <span class="team-name">${s.teamB}</span>
+  `;
   $('hdrFmt').textContent   = `${s.overs} Ov`;
-  $('sbTeam').textContent   = G.match.battingTeam;
+  //$('sbTeam').textContent   = G.match.battingTeam;
 }
 
 function renderScore() {
