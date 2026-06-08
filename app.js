@@ -276,10 +276,17 @@ function showEditPlayersModal() {
   const m = G.match;
   const s = G.setup;
   if (!m || m.done) return;
-
+  
+  // ── Determine batting & bowling team names ──
+  const isBatTeam1 = s.batFirst === s.team1;
+  const batTeamLabel = isBatTeam1 ? s.team1 : s.team2;
+  const bowlTeamLabel = isBatTeam1 ? s.team2 : s.team1;
+  const batNamesList = isBatTeam1 ? s.team1Names : s.team2Names;
+  const bowlNamesList = isBatTeam1 ? s.team2Names : s.team1Names;
+  
   let html = `
     <div id="editPlayersModal" class="modal-bg" style="display:flex">
-      <div class="modal" style="max-width:420px">
+      <div class="modal" style="max-width:440px">
         <div class="modal-ttl">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="26" height="26"
                fill="currentColor" style="transform:translateY(4px)">
@@ -287,14 +294,14 @@ function showEditPlayersModal() {
           </svg>
           Edit Players
         </div>`;
-
-  // Bowler section
-  const curBowler    = m.curBowler;
+  
+  // ── SECTION 1: Bowler Swap (existing) ──
+  const curBowler = m.curBowler;
   const availBowlers = curBowler ? m.bowlNames.filter(n => n !== curBowler) : [];
   if (curBowler && availBowlers.length > 0) {
     html += `
       <div class="ep-section">
-        <div class="ep-label">Current Bowler</div>
+        <div class="ep-label" style="color:var(--ylw);">Current Bowler</div>
         <div class="ep-row">
           <div class="ep-name">${curBowler}</div>
           <span class="ep-arrow">⇄</span>
@@ -303,34 +310,33 @@ function showEditPlayersModal() {
             ${availBowlers.map(n => `<option value="${n}">${n}</option>`).join('')}
           </select>
         </div>
-        <button class="ep-apply-btn" onclick="applyBowlerSwap()">Apply Bowler Change</button>
+        <button class="ep-apply-btn" style="background:rgba(240,180,41,.1);border-color:rgba(240,180,41,.4);color:var(--ylw);margin-top:8px" onclick="applyBowlerSwap()">Apply Bowler Change</button>
       </div>`;
   }
-
-  // Batter section
-  const batNames      = s.batFirst === s.team1 ? s.team1Names : s.team2Names;
-  const availBatPool  = batNames.filter(n => {
+  
+  // ── SECTION 2: Batter Swap (existing) ──
+  const availBatPool = batNamesList.filter(n => {
     const b = m.bat.find(x => x.name === n);
     return b && !b.out;
   });
   const editableBatters = [];
   if (m.wickets === 0) {
-    editableBatters.push({ idx: m.striker,    role: 'Striker' });
+    editableBatters.push({ idx: m.striker, role: 'Striker' });
     editableBatters.push({ idx: m.nonStriker, role: 'Non-Striker' });
   } else {
     editableBatters.push({ idx: m.lastNewBatIdx ?? m.striker, role: 'New Batsman' });
   }
-
+  
   const hasSwappable = editableBatters.some(({ idx }) => {
     const bat = m.bat[idx];
     return bat && availBatPool.filter(n => n !== bat.name).length > 0;
   });
-
+  
   if (hasSwappable) {
     html += `<div class="ep-section" style="margin-top:14px">
-      <div class="ep-label">Batters</div>`;
+      <div class="ep-label" style="color:var(--ylw);">Batters</div>`;
     editableBatters.forEach(({ idx, role }) => {
-      const bat    = m.bat[idx];
+      const bat = m.bat[idx];
       if (!bat) return;
       const others = availBatPool.filter(n => n !== bat.name);
       if (!others.length) return;
@@ -347,16 +353,57 @@ function showEditPlayersModal() {
           </select>
         </div>`;
     });
-    html += `<button class="ep-apply-btn" onclick="applyBatterSwap()">Apply Batter Change</button></div>`;
+    html += `<button class="ep-apply-btn" style="background:rgba(240,180,41,.1);border-color:rgba(240,180,41,.4);color:var(--ylw);margin-top:8px" onclick="applyBatterSwap()">Apply Batter Change</button></div>`;
   }
+  
+  // ── SECTION 3: Player Name Edit (NEW) ──
+  html += `
+    <div class="ep-section" style="margin-top:14px">
+      <div class="ep-label" style="color:var(--grn">Edit Player Names</div>
+      <div style="font-size:11px;color:var(--t3);margin-bottom:10px">
+        Select a player, type the new name, then apply.
+      </div>
 
+      <div style="margin-bottom:12px">
+        <label style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue2);display:block;margin-bottom:6px">
+           ${batTeamLabel} 
+        </label>
+        <div class="ep-row" style="gap:8px;flex-wrap:wrap">
+          <select class="ep-select" id="epNameSelBat" style="flex:1.2;min-width:120px" onchange="epPreviewName('bat')">
+            ${batNamesList.map((n, i) => `<option value="${i}">${n}</option>`).join('')}
+          </select>
+          <!--span class="ep-arrow">→</span-->
+          <input type="text" id="epNameInpBat" maxlength="18"
+            placeholder="New name"
+            style="flex:1.2;min-width:100px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--text);font-family:var(--f);font-size:13px;padding:8px 10px" />
+        </div>
+        <button class="ep-apply-btn" onclick="applyPlayerNameEdit('bat')">Apply Player Name Change</button>
+      </div>
+
+      <div>
+        <label style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red2);display:block;margin-bottom:6px">
+           ${bowlTeamLabel}
+        </label>
+        <div class="ep-row" style="gap:8px;flex-wrap:wrap">
+          <select class="ep-select" id="epNameSelBowl" style="flex:1.2;min-width:120px" onchange="epPreviewName('bowl')">
+            ${bowlNamesList.map((n, i) => `<option value="${i}">${n}</option>`).join('')}
+          </select>
+          <!--span class="ep-arrow">→</span-->
+          <input type="text" id="epNameInpBowl" maxlength="18"
+            placeholder="New name"
+            style="flex:1.2;min-width:100px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--text);font-family:var(--f);font-size:13px;padding:8px 10px" />
+        </div>
+        <button class="ep-apply-btn" style="background:rgba(229,57,53,.1);border-color:rgba(229,57,53,.4);color:#f87171;margin-top:8px" onclick="applyPlayerNameEdit('bowl')">Apply Player Name Change</button>
+      </div>
+    </div>`;
+  
   html += `
       <div class="mact" style="margin-top:16px">
         <button class="mbtn-c" onclick="document.getElementById('editPlayersModal').remove()">Close</button>
       </div>
     </div>
   </div>`;
-
+  
   const old = document.getElementById('editPlayersModal');
   if (old) old.remove();
   document.body.insertAdjacentHTML('beforeend', html);
@@ -409,6 +456,118 @@ function applyBatterSwap() {
   if (!changed.length) { showToast('Select a batter to swap'); return; }
   document.getElementById('editPlayersModal').remove();
   showToast(changed.join(' / '), true);
+  renderAll();
+  saveState();
+}
+
+// ── ড্রপডাউন থেকে select হলে input-এ current নাম দেখাও ──
+function epPreviewName(side) {
+  const sel = document.getElementById(side === 'bat' ? 'epNameSelBat' : 'epNameSelBowl');
+  const inp = document.getElementById(side === 'bat' ? 'epNameInpBat' : 'epNameInpBowl');
+  if (!sel || !inp) return;
+
+  const s = G.setup;
+  const isBatTeam1 = s.batFirst === s.team1;
+  const namesList = side === 'bat'
+    ? (isBatTeam1 ? s.team1Names : s.team2Names)
+    : (isBatTeam1 ? s.team2Names : s.team1Names);
+
+  inp.value = namesList[+sel.value] || '';
+  inp.focus();
+  inp.select();
+}
+
+// ── প্লেয়ার নাম সব জায়গায় আপডেট করো ──
+function applyPlayerNameEdit(side) {
+  const s = G.setup;
+  const m = G.match;
+  const sel = document.getElementById(side === 'bat' ? 'epNameSelBat' : 'epNameSelBowl');
+  const inp = document.getElementById(side === 'bat' ? 'epNameInpBat' : 'epNameInpBowl');
+  if (!sel || !inp) return;
+
+  const newName = inp.value.trim();
+  if (!newName) { showToast('Name cannot be empty'); return; }
+
+  const isBatTeam1 = s.batFirst === s.team1;
+  const playerIdx  = +sel.value;
+
+  // কোন setup array এবং match array তে কাজ করতে হবে
+  const isBatSide = side === 'bat';
+
+  // setup names arrays
+  const setupBatNames  = isBatTeam1 ? s.team1Names : s.team2Names;
+  const setupBowlNames = isBatTeam1 ? s.team2Names : s.team1Names;
+  const setupNames = isBatSide ? setupBatNames : setupBowlNames;
+
+  const oldName = setupNames[playerIdx];
+  if (!oldName) { showToast('Player not found'); return; }
+  if (oldName === newName) { showToast('Name is the same, no change needed'); return; }
+
+  // দুটো team1Names/team2Names এও reflect করতে হবে
+  if (isBatTeam1) {
+    if (isBatSide) s.team1Names[playerIdx] = newName;
+    else           s.team2Names[playerIdx] = newName;
+  } else {
+    if (isBatSide) s.team2Names[playerIdx] = newName;
+    else           s.team1Names[playerIdx] = newName;
+  }
+  // setup batNames/bowlNames এও আপডেট
+  if (isBatSide) s.batNames = [...(isBatTeam1 ? s.team1Names : s.team2Names)];
+  else           s.bowlNames = [...(isBatTeam1 ? s.team2Names : s.team1Names)];
+
+  // match.bat (batting side) আপডেট
+  if (isBatSide) {
+    const batEntry = m.bat.find(b => b.name === oldName);
+    if (batEntry) batEntry.name = newName;
+  }
+
+  // match.bowlNames (bowling side) আপডেট
+  if (!isBatSide) {
+    const bi = m.bowlNames.indexOf(oldName);
+    if (bi !== -1) m.bowlNames[bi] = newName;
+
+    // bowlMap & bowlOrder আপডেট
+    if (m.bowlMap[oldName]) {
+      m.bowlMap[newName] = { ...m.bowlMap[oldName] };
+      delete m.bowlMap[oldName];
+    }
+    const oi = m.bowlOrder.indexOf(oldName);
+    if (oi !== -1) m.bowlOrder[oi] = newName;
+    if (m.curBowler === oldName) m.curBowler = newName;
+    if (m.prevBowler === oldName) m.prevBowler = newName;
+  }
+
+  // history snaps এও নাম আপডেট (পুরনো undo এ যাতে সমস্যা না হয়)
+  m.history = m.history.map(snapStr => {
+    return snapStr.split(JSON.stringify(oldName)).join(JSON.stringify(newName));
+  });
+
+  // inn1FullData এ যদি থাকে (2nd innings)
+  if (G.inn1FullData) {
+    if (isBatSide) {
+      // 1st innings batting team ছিল এই side — inn1FullData.bat এ নাম আপডেট
+      // (2nd innings এ batSide উল্টো হয়, তাই 1st innings এ bowlSide ছিল এই team)
+    }
+    // simple string replace on inn1FullData
+    try {
+      const d1str = JSON.stringify(G.inn1FullData)
+        .split(JSON.stringify(oldName)).join(JSON.stringify(newName));
+      G.inn1FullData = JSON.parse(d1str);
+    } catch(e) {}
+  }
+  if (G.inn1MatchState) {
+    G.inn1MatchState = G.inn1MatchState
+      .split(JSON.stringify(oldName)).join(JSON.stringify(newName));
+  }
+
+  // ড্রপডাউন রিফ্রেশ
+  const updatedNames = isBatSide ? setupBatNames : setupBowlNames;
+  sel.innerHTML = updatedNames.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+  sel.value = playerIdx;
+  inp.value = newName;
+
+  document.getElementById('editPlayersModal').remove();
+  showToast(`${oldName} → ${newName}`, true);
   renderAll();
   saveState();
 }
