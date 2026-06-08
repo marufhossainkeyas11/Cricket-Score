@@ -28,12 +28,11 @@
 </head>
 <body>
 <div id="app">
-
   <!-- ═══ SETUP SCREEN ═══ -->
   <div id="setup-screen" class="screen active">
     <div class="setup-glow"></div>
     <div class="setup-wrap">
-
+      
       <div class="brand">
         <img src="./favicon.svg" alt="Logo" class="brand-svg">
         <div class="brand-text">
@@ -45,145 +44,239 @@
           </div>
         </div>
       </div>
-
+      
       <div class="card">
-
-        <!-- STEP 1: Match Setup -->
-        <div class="step">
-          <div class="step-hd">01 · MATCH SETUP</div>
-          
-          <div class="team-row">
-            <div class="fg">
-              <label>‏‏‎ ‎‏‏‎ ‎‏‏‎ Team 1</label>
-              <input id="teamA" type="text" placeholder="Team A" maxlength="20" />
-            </div>
-            <div class="vs">VS</div>
-            <div class="fg">
-              <label>‏‏‎ ‎‏‏‎ ‎‏‏‎ Team 2</label>
-              <input id="teamB" type="text" placeholder="Team B" maxlength="20" />
-            </div>
-          </div>
-          
-          <div class="match-meta-row">
-            <div class="meta-field">
-              <label>Overs</label>
-              <input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" />
-            </div>
-            <div class="meta-divider"></div>
-            <div class="meta-field">
-              <label>Players / Side</label>
-              <input id="playerCount" type="number" value="11" min="2" max="11" oninput="onMatchChange()" />
-            </div>
-          </div>
-        </div>
-          
-        <!-- STEP 2: Bowling Over Limits -->
-        <div class="step">
-          <div class="step-hd">02 · BOWLING OVER LIMITS</div>
-          <div class="limit-info" id="limitInfo"></div>
-          <div id="tierList"></div>
-          <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">+ Add Next Limit Tier</button>
-          <div class="feasibility" id="feasibility"></div>
-        </div>
-
-        <!-- STEP 3: Team 1 Players -->
-        <div class="step">
-          <div class="step-hd">03 · TEAM 1 PLAYERS</div>
-          <div class="pgrid" id="batGrid"></div>
-        </div>
-
-        <!-- STEP 4: Team 2 Players -->
-        <div class="step">
-          <div class="step-hd">04 · TEAM 2 PLAYERS</div>
-          <div class="pgrid" id="bowlGrid"></div>
-        </div>
-
-          <!-- STEP 5: Match Rules -->
-          <div class="step">
-            <div class="step-hd">05 · MATCH RULES</div>
+        <div class="card-panels">
+          <div class="card-setup">
             
-            <div class="rules-list">
+            <!-- STEP 1: Match Setup -->
+            <div class="step">
+              <div class="step-hd">01 · MATCH SETUP</div>
               
-              <label class="rule-item">
-                <input type="checkbox" id="byeAllowedToggle" class="rule-cb">
-                <div class="rule-body">
-                  <div class="rule-ico-wrap">🦵</div>
-                  <div class="rule-text">
-                    <span class="rule-title">Bye &amp; Leg Bye Runs</span>
-                    <span class="rule-sub">Disable for local matches that don't count bye runs.</span>
-                  </div>
+              <div class="team-row">
+                <div class="fg">
+                  <label>‏‏‎ ‎‏‏‎ ‎‏‏‎ Team 1</label>
+                  <input id="teamA" type="text" placeholder="Team A" maxlength="20" />
                 </div>
-                <div class="rule-switch" aria-hidden="true">
-                  <div class="rule-knob"></div>
+                <div class="vs">VS</div>
+                <div class="fg">
+                  <label>‏‏‎ ‎‏‏‎ ‎‏‏‎ Team 2</label>
+                  <input id="teamB" type="text" placeholder="Team B" maxlength="20" />
                 </div>
-              </label>
-              
-              <label class="rule-item">
-                <input type="checkbox" id="lastManToggle" class="rule-cb">
-                <div class="rule-body">
-                  <div class="rule-ico-wrap">🧍</div>
-                  <div class="rule-text">
-                    <span class="rule-title">Last Man Standing</span>
-                    <span class="rule-sub">Last batsman bats alone — scores only on extras &amp; boundaries.</span>
-                  </div>
-                </div>
-                <div class="rule-switch" aria-hidden="true">
-                  <div class="rule-knob"></div>
-                </div>
-              </label>
-              
-              <label class="rule-item">
-                <input type="checkbox" id="shortCricToggle" class="rule-cb">
-                <div class="rule-body">
-                  <div class="rule-ico-wrap">🏟️</div>
-                  <div class="rule-text">
-                    <span class="rule-title">Full Cricket Mode</span>
-                    <span class="rule-sub">For Full Crease Cricket — normal 6s allowed.</span>
-                  </div>
-                </div>
-                <div class="rule-switch" aria-hidden="true">
-                  <div class="rule-knob"></div>
-                </div>
-              </label>
-              
-              <label class="rule-item">
-                <input type="checkbox" id="darkModeToggle" class="rule-cb">
-                <div class="rule-body">
-                  <div class="rule-ico-wrap">🌙</div>
-                  <div class="rule-text">
-                    <span class="rule-title">Dark Mode</span>
-                    <span class="rule-sub">Scoring continues in dark mode — good for nighttime &amp; battery.</span>
-                  </div>
-                </div>
-                <div class="rule-switch" aria-hidden="true">
-                  <div class="rule-knob"></div>
-                </div>
-              </label>
-              
-              
-            </div>
-            
-            <!-- Reset — isolated zone, clearly dangerous -->
-            <div class="danger-zone">
-              <div class="dz-left">
-                <div class="dz-label">DANGER ZONE</div>
-                <div class="dz-title">Reset All</div>
-                <div class="dz-sub">Clears every input &amp; cached match data permanently</div>
               </div>
-              <button class="dz-btn" onclick="if(confirm('All data will be deleted. Are you sure?')) doNewMatch()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor">
-                  <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
-                </svg>
-                Reset
-              </button>
+              
+              <div class="match-meta-row">
+                <div class="meta-field">
+                  <label>Overs</label>
+                  <input id="totalOvers" type="number" value="20" min="1" max="50" oninput="onMatchChange()" />
+                </div>
+                <div class="meta-divider"></div>
+                <div class="meta-field">
+                  <label>Players / Side</label>
+                  <input id="playerCount" type="number" value="11" min="2" max="11" oninput="onMatchChange()" />
+                </div>
+              </div>
             </div>
             
+            <!-- STEP 2: Bowling Over Limits -->
+            <div class="step">
+              <div class="step-hd">02 · BOWLING OVER LIMITS</div>
+              <div class="limit-info" id="limitInfo"></div>
+              <div id="tierList"></div>
+              <button class="add-tier-btn" id="addTierBtn" onclick="addTier()">+ Add Next Limit Tier</button>
+              <div class="feasibility" id="feasibility"></div>
+            </div>
+            
+            <!-- STEP 3: Team 1 Players -->
+            <div class="step">
+              <div class="step-hd">03 · TEAM 1 PLAYERS</div>
+              <div class="pgrid" id="batGrid"></div>
+            </div>
+            
+            <!-- STEP 4: Team 2 Players -->
+            <div class="step">
+              <div class="step-hd">04 · TEAM 2 PLAYERS</div>
+              <div class="pgrid" id="bowlGrid"></div>
+            </div>
+            
+            <!-- STEP 5: Match Rules -->
+            <div class="step">
+              <div class="step-hd">05 · MATCH RULES</div>
+              
+              <div class="rules-list">
+                
+                <label class="rule-item">
+                  <input type="checkbox" id="byeAllowedToggle" class="rule-cb">
+                  <div class="rule-body">
+                    <div class="rule-ico-wrap">🦵</div>
+                    <div class="rule-text">
+                      <span class="rule-title">Bye &amp; Leg Bye Runs</span>
+                      <span class="rule-sub">Disable for local matches that don't count bye runs.</span>
+                    </div>
+                  </div>
+                  <div class="rule-switch" aria-hidden="true">
+                    <div class="rule-knob"></div>
+                  </div>
+                </label>
+                
+                <label class="rule-item">
+                  <input type="checkbox" id="lastManToggle" class="rule-cb">
+                  <div class="rule-body">
+                    <div class="rule-ico-wrap">🧍</div>
+                    <div class="rule-text">
+                      <span class="rule-title">Last Man Standing</span>
+                      <span class="rule-sub">Last batsman bats alone — scores only on extras &amp; boundaries.</span>
+                    </div>
+                  </div>
+                  <div class="rule-switch" aria-hidden="true">
+                    <div class="rule-knob"></div>
+                  </div>
+                </label>
+                
+                <label class="rule-item">
+                  <input type="checkbox" id="shortCricToggle" class="rule-cb">
+                  <div class="rule-body">
+                    <div class="rule-ico-wrap">🏟️</div>
+                    <div class="rule-text">
+                      <span class="rule-title">Full Cricket Mode</span>
+                      <span class="rule-sub">For Full Crease Cricket — normal 6s allowed.</span>
+                    </div>
+                  </div>
+                  <div class="rule-switch" aria-hidden="true">
+                    <div class="rule-knob"></div>
+                  </div>
+                </label>
+                
+                <label class="rule-item">
+                  <input type="checkbox" id="darkModeToggle" class="rule-cb">
+                  <div class="rule-body">
+                    <div class="rule-ico-wrap">🌙</div>
+                    <div class="rule-text">
+                      <span class="rule-title">Dark Mode</span>
+                      <span class="rule-sub">Scoring continues in dark mode — good for nighttime &amp; battery.</span>
+                    </div>
+                  </div>
+                  <div class="rule-switch" aria-hidden="true">
+                    <div class="rule-knob"></div>
+                  </div>
+                </label>
+                
+                
+              </div>
+              
+              <div class="toss-entry-row" onclick="openTossPage()">
+                <div class="dz-left">
+                  <div class="dz-label" style="color:rgba(240,180,41,0.55)">COIN TOSS</div>
+                  <div class="dz-title" style="color:#fde68a">Flip a Coin</div>
+                  <div class="dz-sub">Decide who bats first with a fair toss</div>
+                </div>
+                <button class="toss-entry-go" onclick="openTossPage()">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Reset — isolated zone, clearly dangerous -->
+              <div class="danger-zone">
+                <div class="dz-left">
+                  <div class="dz-label">DANGER ZONE</div>
+                  <div class="dz-title">Reset All</div>
+                  <div class="dz-sub">Clears every input &amp; cached match data permanently</div>
+                </div>
+                <button class="dz-btn" onclick="if(confirm('All data will be deleted. Are you sure?')) doNewMatch()">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="14" height="14" fill="currentColor">
+                    <path d="M440-122q-121-15-200.5-105.5T160-440q0-66 26-126.5T260-672l57 57q-38 34-57.5 79T240-440q0 88 56 155.5T440-202v80Zm80 0v-80q87-16 143.5-83T720-440q0-100-70-170t-170-70h-3l44 44-56 56-140-140 140-140 56 56-44 44h3q134 0 227 93t93 227q0 121-79.5 211.5T520-122Z" />
+                  </svg>
+                  Reset
+                </button>
+              </div>
+            </div>
+            
+            <button class="start-btn" onclick="startMatch()">
+              <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor" style="transform:translateY(4px)">
+                <path d="M600-392 488-280q-12 12-28 12t-28-12L92-620q-12-12-12-27t12-27l112-112q12-12 29-12t29 12l338 338q12 12 12 28t-12 28Zm-140 28 56-56-284-284-56 56 284 284ZM744-80 574-250l56-56 170 170-56 56ZM641-641q-41-41-41-99t41-99q41-41 99-41t99 41q41 41 41 99t-41 99q-41 41-99 41t-99-41Zm141.5-56.5Q800-715 800-740t-17.5-42.5Q765-800 740-800t-42.5 17.5Q680-765 680-740t17.5 42.5Q715-680 740-680t42.5-17.5ZM740-740ZM346-534Z" />
+              </svg>
+              Start Match
+            </button>
           </div>
-
-        <button class="start-btn" onclick="startMatch()">
-          <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor" style="transform:translateY(4px)" ><path d="M600-392 488-280q-12 12-28 12t-28-12L92-620q-12-12-12-27t12-27l112-112q12-12 29-12t29 12l338 338q12 12 12 28t-12 28Zm-140 28 56-56-284-284-56 56 284 284ZM744-80 574-250l56-56 170 170-56 56ZM641-641q-41-41-41-99t41-99q41-41 99-41t99 41q41 41 41 99t-41 99q-41 41-99 41t-99-41Zm141.5-56.5Q800-715 800-740t-17.5-42.5Q765-800 740-800t-42.5 17.5Q680-765 680-740t17.5 42.5Q715-680 740-680t42.5-17.5ZM740-740ZM346-534Z"/></svg>
-          Start Match
-        </button>
+          
+          <!-- ═══ TOSS PANEL ═══ -->
+          <div class="card-toss" id="cardToss">
+            
+            <div class="toss-panel-hd">
+              <button class="toss-back-btn" onclick="closeTossPage()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                  <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z" />
+                </svg>
+                Back
+              </button>
+              <div class="toss-panel-title"> Coin Toss</div>
+            </div>
+            
+            <!-- Teams bar -->
+            <div class="toss-teams-bar">
+              <div class="toss-team-chip team-a" id="tossTeamA">Team A</div>
+              <div class="toss-vs-dot">VS</div>
+              <div class="toss-team-chip team-b" id="tossTeamB">Team B</div>
+            </div>
+            
+            <!-- Coin -->
+            <div class="toss-coin-wrap">
+              <div class="toss-coin-scene">
+                <div class="toss-coin" id="tossCoin" onclick="flipCoin()">
+                  <div class="toss-coin-face toss-face-h">
+                    <div class="toss-face-symbol">☀</div>
+                  </div>
+                  <div class="toss-coin-face toss-face-t">
+                    <div class="toss-face-symbol">☾</div>
+                  </div>
+                </div>
+              </div>
+              <div class="toss-coin-shadow" id="tossCoinShadow"></div>
+            </div>
+            
+            <!-- Result -->
+            <div class="toss-result-area">
+              <div class="toss-result-text" id="tossResultText"></div>
+              <div class="toss-result-sub" id="tossResultSub">Tap the coin to flip</div>
+            </div>
+            
+            <!-- Flip button -->
+            <button class="toss-flip-btn" id="tossFlipBtn" onclick="flipCoin()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              Flip Coin
+            </button>
+            
+            <!-- Scoreboard -->
+            <div class="toss-scoreboard">
+              <div class="toss-score-item">
+                <div class="toss-score-num tc-a-clr" id="tossTeamAWins">0</div>
+                <div class="toss-score-lbl" id="tossTeamALbl">Team A</div>
+              </div>
+              <div class="toss-score-div"></div>
+              <div class="toss-score-item">
+                <div class="toss-score-num" id="tossTotalFlips">0</div>
+                <div class="toss-score-lbl">Flips</div>
+              </div>
+              <div class="toss-score-div"></div>
+              <div class="toss-score-item">
+                <div class="toss-score-num tc-b-clr" id="tossTeamBWins">0</div>
+                <div class="toss-score-lbl" id="tossTeamBLbl">Team B</div>
+              </div>
+            </div>
+            
+            <!-- History dots -->
+            <div class="toss-history" id="tossHistory"></div>
+            
+            <!-- Streak -->
+            <div class="toss-streak" id="tossStreak"></div>
+            
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -713,6 +806,191 @@
       }
     });
   })();
+</script>
+<script>
+    // ═══════════════════════════════════════════════
+    //  STANDALONE TOSS PAGE  (crypto random)
+    // ═══════════════════════════════════════════════
+    (function() {
+      let tcA = 0,
+        tcB = 0,
+        tcTotal = 0;
+      let tcFlipping = false;
+      let tcLastSide = null,
+        tcStreak = 0;
+      const TC_MAX_DOTS = 22;
+      let tcIsOpen = false;
+      
+      function secureCoinFlip() {
+        const buf = new Uint32Array(1);
+        let val;
+        do {
+          crypto.getRandomValues(buf);
+          val = buf[0];
+        } while (val >= 0xFFFFFFFE);
+        return val % 2 === 0;
+      }
+      
+      function openTossPage(pushState = true) {
+        if (tcIsOpen) return;
+        tcIsOpen = true;
+        
+        const t1 = $('teamA')?.value.trim() || 'Team A';
+        const t2 = $('teamB')?.value.trim() || 'Team B';
+        $('tossTeamA').textContent = t1;
+        $('tossTeamB').textContent = t2;
+        $('tossTeamALbl').textContent = t1;
+        $('tossTeamBLbl').textContent = t2;
+        
+        const panels = document.querySelector('.card-panels');
+        const card = document.querySelector('.card');
+        const toss = document.querySelector('.card-toss');
+        
+        panels?.classList.add('toss-open');
+        requestAnimationFrame(() => {
+          if (card && toss) card.style.minHeight = toss.scrollHeight + 'px';
+        });
+        
+        if (pushState) history.pushState({ popup: 'toss-page' }, '', location.href);
+      }
+      
+      function closeTossPage(fromHistory = false) {
+        if (!tcIsOpen) return;
+        tcIsOpen = false;
+        
+        const panels = document.querySelector('.card-panels');
+        const card = document.querySelector('.card');
+        panels?.classList.remove('toss-open');
+        if (card) card.style.minHeight = '';
+        
+        if (!fromHistory && history.state?.popup === 'toss-page') {
+          history.back();
+        }
+      }
+      
+      function flipCoin() {
+        if (tcFlipping) return;
+        tcFlipping = true;
+        
+        const coin = $('tossCoin');
+        const btn = $('tossFlipBtn');
+        const resText = $('tossResultText');
+        const resSub = $('tossResultSub');
+        
+        resText.classList.remove('tc-show', 'tc-a', 'tc-b');
+        resSub.classList.remove('tc-show');
+        btn.disabled = true;
+        
+        const rawIsA = secureCoinFlip();
+        const isA = tcTotal % 2 === 0 ? rawIsA : !rawIsA;
+        
+        coin.classList.remove('tc-flip-a', 'tc-flip-b', 'tc-flipping');
+        void coin.offsetWidth;
+        coin.classList.add('tc-flipping', isA ? 'tc-flip-a' : 'tc-flip-b');
+        
+        setTimeout(() => {
+          const winner = isA ?
+            ($('tossTeamA').textContent || 'Team A') :
+            ($('tossTeamB').textContent || 'Team B');
+          
+          resText.textContent = winner;
+          resText.classList.add(isA ? 'tc-a' : 'tc-b', 'tc-show');
+          resSub.textContent = 'wins the toss!';
+          resSub.classList.add('tc-show');
+          
+          if (isA) {
+            tcA++;
+            tcBump('tossTeamAWins', tcA);
+          }
+          else {
+            tcB++;
+            tcBump('tossTeamBWins', tcB);
+          }
+          tcTotal++;
+          tcBump('tossTotalFlips', tcTotal);
+          
+          const side = isA ? 'a' : 'b';
+          if (tcLastSide === side) tcStreak++;
+          else {
+            tcLastSide = side;
+            tcStreak = 1;
+          }
+          updateStreak(winner);
+          
+          addDot(isA);
+          
+          coin.classList.remove('tc-flipping');
+          coin.style.transform = '';
+          setTimeout(() => coin.classList.remove('tc-flip-a', 'tc-flip-b'), 60);
+          
+          tcFlipping = false;
+          btn.disabled = false;
+          
+          if (navigator.vibrate) navigator.vibrate(25);
+        }, 1600);
+      }
+      
+      function tcBump(id, val) {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = val;
+        el.classList.remove('tc-bump');
+        void el.offsetWidth;
+        el.classList.add('tc-bump');
+        setTimeout(() => el.classList.remove('tc-bump'), 260);
+      }
+      
+      function updateStreak(winner) {
+        const el = $('tossStreak');
+        if (!el) return;
+        if (tcStreak >= 3) {
+          el.textContent = `${winner}  ·  ${tcStreak} in a row`;
+          el.className = 'toss-streak tc-hot';
+        } else {
+          el.textContent = `${tcTotal} flip${tcTotal !== 1 ? 's' : ''} total`;
+          el.className = 'toss-streak';
+        }
+      }
+      
+      function addDot(isA) {
+        const hist = $('tossHistory');
+        if (!hist) return;
+        const dots = hist.querySelectorAll('.tc-dot');
+        if (dots.length >= TC_MAX_DOTS) dots[0].remove();
+        const d = document.createElement('div');
+        d.className = `tc-dot ${isA ? 'tc-a' : 'tc-b'}`;
+        hist.appendChild(d);
+        requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('tc-show')));
+      }
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        const coin = $('tossCoin');
+        if (!coin) return;
+        coin.addEventListener('mousemove', e => {
+          if (tcFlipping) return;
+          const r = coin.getBoundingClientRect();
+          const x = ((e.clientY - r.top) / r.height - 0.5) * 14;
+          const y = ((e.clientX - r.left) / r.width - 0.5) * -14;
+          coin.style.transform = `rotateX(${x}deg) rotateY(${y}deg)`;
+        });
+        coin.addEventListener('mouseleave', () => {
+          if (!tcFlipping) coin.style.transform = '';
+        });
+      });
+      
+      window.addEventListener('popstate', (e) => {
+        if (e.state?.popup === 'toss-page') {
+          openTossPage(false);
+        } else {
+          closeTossPage(true);
+        }
+      });
+      
+      
+      window.openTossPage = openTossPage;
+      window.closeTossPage = closeTossPage;
+      window.flipCoin = flipCoin;
+    })();
 </script>
 <script>
 const ThemeSystem = (() => {
