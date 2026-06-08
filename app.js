@@ -1969,7 +1969,7 @@ function renderHeader() {
     <span class="team-name">${s.teamB}</span>
   `;
   $('hdrFmt').textContent   = `${s.overs} Ov`;
-  //$('sbTeam').textContent   = G.match.battingTeam;
+  $('sbTeam').textContent   = G.match.battingTeam;
 }
 
 function renderScore() {
