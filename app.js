@@ -1950,38 +1950,210 @@ function toggleSC() {
 
 function renderScorecard() {
   const m = G.match;
+  const s = G.setup;
+  const byeAllowed = s.byeAllowed !== false;
+  const isShortCric = !!s.shortCric;
 
-  const bp = $('batSC');
-  bp.innerHTML = '';
-  m.bat.forEach(b => {
-    if (b.notYet && !b.out) return;
-    const r = el('div', 'scr');
-    r.innerHTML = `
-      <span class="scr-nm">${b.name}</span>
-      <span class="scr-hw">${b.out ? b.howOut : (b.notYet ? 'dnb' : 'not out')}</span>
-      <span class="scr-r">${b.runs}</span>
-      <span class="scr-b">(${b.balls})</span>
-      <span class="scr-4">${b.fours}</span>
-      <span class="scr-6">${b.sixes}</span>`;
-    bp.appendChild(r);
+  /* ── Batting ─────────────────────────────── */
+  const batRows  = $('iscBatRows');
+  const batMeta  = $('iscBatMeta');
+  batRows.innerHTML = '';
+
+  let totalRuns = 0, totalBalls = 0, activeBats = 0;
+
+  m.bat.forEach((b, i) => {
+    const isStriker    = i === m.striker;
+    const isNonStriker = i === m.nonStriker;
+    const isActive     = isStriker || isNonStriker;
+    const isOut        = b.out;
+    const dnb          = b.notYet && !b.out;
+
+    if (dnb) {
+      // yet to bat — show as DNB row at bottom
+      const row = el('div', 'isc-dnb-row');
+      row.textContent = `${b.name} — yet to bat`;
+      batRows.appendChild(row);
+      return;
+    }
+
+    totalRuns  += b.runs;
+    totalBalls += b.balls;
+    if (isActive) activeBats++;
+
+    const sr = b.balls > 0 ? (b.runs / b.balls * 100).toFixed(1) : '—';
+    const srClass = b.balls > 0
+      ? (parseFloat(sr) >= 120 ? 'sr-hot' : parseFloat(sr) >= 80 ? 'sr-mid' : 'sr-cold')
+      : '';
+
+    let statusLabel = '';
+    if (isStriker)    statusLabel = '⚡';
+    else if (isNonStriker) statusLabel = '🏏';
+
+    const howOut = isActive
+      ? (isStriker ? 'on strike' : 'non-striker')
+      : (isOut ? b.howOut : 'not out');
+
+    const row = el('div',
+      'isc-bat-row' +
+      (isStriker    ? ' is-striker'    : '') +
+      (isNonStriker ? ' is-nonstriker' : '') +
+      (isOut        ? ' is-out'        : '')
+    );
+
+    row.innerHTML = `
+      <div class="isc-nm">
+        <div class="isc-nm-name">${statusLabel ? statusLabel + ' ' : ''}${b.name}</div>
+        <div class="isc-nm-sub">${howOut}</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="isc-stat isc-stat-r">${b.runs}</div>
+      <div class="isc-stat isc-stat-b">(${b.balls})</div>
+      <div class="isc-stat isc-stat-4">${b.fours}</div>
+      <div class="isc-stat isc-stat-6">${b.sixes}</div>
+      <div class="isc-stat isc-stat-sr ${srClass}">${sr}</div>`;
+
+    batRows.appendChild(row);
   });
 
-  const bwp = $('bowlSC');
-  bwp.innerHTML = '';
-  m.bowlOrder.forEach(name => {
-    const b = m.bowlMap[name];
-    if (!b) return;
-    const ov   = Math.floor(b.balls / 6), rb = b.balls % 6;
-    const econ = b.balls > 0 ? ((b.runs / b.balls) * 6).toFixed(1) : '—';
-    const r = el('div', 'scr');
-    r.innerHTML = `
-      <span class="scr-nm">${name}</span>
-      <span class="scr-hw">${ov}.${rb}ov · ${b.wides || 0}wd ${b.noballs || 0}nb</span>
-      <span class="scr-r">${b.runs}</span>
-      <span class="scr-b">${b.wickets}w</span>
-      <span class="scr-4">${econ}</span>`;
-    bwp.appendChild(r);
+  // Section meta: total runs off bat
+  const runsBat = m.runs - (m.extras.wide||0) - (m.extras.noball||0) - (m.extras.bye||0) - (m.extras.legbye||0);
+  batMeta.innerHTML = `
+  <span class="isc-meta-runs">${runsBat}</span>
+  <span class="isc-meta-sep">bat ·</span>
+  <span class="isc-meta-total">${m.runs} total</span>`;
+
+  /* ── Extras ──────────────────────────────── */
+  const extEl = $('iscExtras');
+  extEl.innerHTML = '';
+
+  const extDefs = [
+    { key: 'wide',   label: 'Wd',  enabled: true },
+    { key: 'noball', label: 'NB',  enabled: true },
+    { key: 'bye',    label: 'B',   enabled: byeAllowed },
+    { key: 'legbye', label: 'LB',  enabled: byeAllowed },
+  ];
+
+  const totalExtras = (m.extras.wide||0) + (m.extras.noball||0) +
+    (byeAllowed ? (m.extras.bye||0) + (m.extras.legbye||0) : 0);
+
+  // Total extras chip first
+  const totChip = el('div', 'isc-ext-item' + (totalExtras > 0 ? ' has-val' : ''));
+  totChip.innerHTML = `
+    <div class="isc-ext-label">Ext</div>
+    <div class="isc-ext-val">${totalExtras}</div>`;
+  extEl.appendChild(totChip);
+
+  extDefs.forEach(({ key, label, enabled }) => {
+    const val  = m.extras[key] || 0;
+    const chip = el('div',
+      'isc-ext-item' +
+      (val > 0 ? ' has-val' : '') +
+      (!enabled ? ' disabled-ext' : '')
+    );
+    chip.innerHTML = `
+      <div class="isc-ext-label">${label}</div>
+      <div class="isc-ext-val">${enabled ? val : '—'}</div>`;
+    extEl.appendChild(chip);
   });
+
+  // Short cric 6 indicator
+  if (isShortCric) {
+    const chip = el('div', 'isc-ext-item disabled-ext');
+    chip.innerHTML = `<div class="isc-ext-label">6s</div><div class="isc-ext-val" style="font-size:10px;color:var(--t3)">OFF</div>`;
+    extEl.appendChild(chip);
+  }
+
+  /* ── Over Summary ────────────────────────── */
+  const ovWrap = $('iscOversWrap');
+  const ovStrip = $('iscOvStrip');
+  const ovMeta  = $('iscOvMeta');
+  ovStrip.innerHTML = '';
+
+  if (m.doneOvers && m.doneOvers.length > 0) {
+    ovWrap.style.display = '';
+    let maxOvRuns = 0;
+
+    const ovData = m.doneOvers.map((ov, i) => {
+      const runs   = ov.reduce((s, b) => s + b.runs, 0);
+      const wkts   = ov.filter(b => b.isW).length;
+      const maiden = runs === 0;
+      if (runs > maxOvRuns) maxOvRuns = runs;
+      return { i, runs, wkts, maiden };
+    });
+
+    ovData.forEach(({ i, runs, wkts, maiden }) => {
+      const isHigh = runs >= Math.max(maxOvRuns * 0.7, 10);
+      const chip = el('div',
+        'isc-ov-chip' +
+        (isHigh  ? ' ov-high'   : '') +
+        (maiden  ? ' ov-maiden' : '')
+      );
+      chip.innerHTML = `
+        <div class="isc-ov-num">O${i + 1}</div>
+        <div class="isc-ov-runs">${runs}${wkts > 0 ? '<span style="font-size:9px;color:#f87171;margin-left:1px">-' + wkts + 'W</span>' : ''}</div>`;
+      ovStrip.appendChild(chip);
+    });
+
+    const totalOvRuns = ovData.reduce((s, o) => s + o.runs, 0);
+    const avgPerOv    = (totalOvRuns / ovData.length).toFixed(1);
+    ovMeta.textContent = `${ovData.length} ov · avg ${avgPerOv}`;
+  } else {
+    ovWrap.style.display = 'none';
+  }
+
+  /* ── Bowling ─────────────────────────────── */
+  const bowlRows = $('iscBowlRows');
+  const bowlMeta = $('iscBowlMeta');
+  bowlRows.innerHTML = '';
+
+  if (!m.bowlOrder.length) {
+    const empty = el('div', 'isc-dnb-row');
+    empty.textContent = 'No bowlers yet';
+    bowlRows.appendChild(empty);
+    bowlMeta.textContent = '';
+  } else {
+    let totalWkts = 0;
+
+    m.bowlOrder.forEach(name => {
+      const b = m.bowlMap[name];
+      if (!b) return;
+      const ov     = Math.floor(b.balls / 6);
+      const rem    = b.balls % 6;
+      const eco    = b.balls > 0 ? (b.runs / b.balls * 6).toFixed(2) : '—';
+      const isCur  = name === m.curBowler;
+      const maxOv  = getMaxOvForBowler(name, m);
+      const left   = maxOv - ov;
+      const ecoNum = parseFloat(eco);
+      const ecoClass = b.balls > 0
+        ? (ecoNum < 7 ? 'eco-good' : ecoNum < 10 ? 'eco-mid' : 'eco-bad')
+        : '';
+
+      totalWkts += b.wickets;
+
+      const wdNb = [];
+      if (b.wides)  wdNb.push(`${b.wides}wd`);
+      if (b.noballs) wdNb.push(`${b.noballs}nb`);
+
+      const row = el('div', 'isc-bowl-row' + (isCur ? ' is-cur' : ''));
+      row.innerHTML = `
+        <div class="isc-bowl-nm">
+          <div class="isc-bowl-nm-name">${isCur ? '▶ ' : ''}${name}</div>
+          <div class="isc-bowl-nm-sub">${left > 0 ? left + ' ov left' : 'quota done'}${wdNb.length ? ' · ' + wdNb.join(' ') : ''}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="isc-stat isc-stat-ov">${ov}.${rem}</div>
+        <div class="isc-stat isc-stat-br">${b.runs}</div>
+        <div class="isc-stat isc-stat-bw">${b.wickets}w</div>
+        <div class="isc-stat isc-stat-eco ${ecoClass}">${eco}</div>`;
+
+      bowlRows.appendChild(row);
+    });
+
+    bowlMeta.innerHTML = `
+    <span class="isc-meta-bowlers">${m.bowlOrder.length} bowlers</span>
+    <span class="isc-meta-sep">·</span>
+   <span class="isc-meta-wk">${totalWkts}w</span>`;
+  }
 }
 
 function flash(type) {
