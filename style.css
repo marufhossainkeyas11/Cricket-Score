@@ -585,9 +585,12 @@ button { cursor: pointer; }
   padding: 9px 14px;
 }
 
-.hdr-l { display: flex; align-items: center; gap: 10px; }
+.hdr-l { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;}
 .hdr-logo { width: 36px; height: 36px; }
-.hdr-teams { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.hdr-teams { font-size: 13px; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; min-width: 0; }
+.team-name{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(248, 113, 113, 1); }
+.team-name:nth-child(1){ color: rgba(96,165,250, 1); }
+.hdr-vs { flex-shrink: 0; color: var(--t3); transform: translateY(-1.4px); }
 .hdr-r { display: flex; align-items: center; gap: 7px; }
 .hdr-fmt { font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--t2); }
 
