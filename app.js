@@ -315,10 +315,9 @@ function showEditPlayersModal() {
   }
   
   // ── SECTION 2: Batter Swap (existing) ──
-  const availBatPool = batNamesList.filter(n => {
-    const b = m.bat.find(x => x.name === n);
-    return b && !b.out;
-  });
+  const availBatPool = m.bat
+    .filter(b => !b.out)
+    .map(b => b.name);
   const editableBatters = [];
   if (m.wickets === 0) {
     editableBatters.push({ idx: m.striker, role: 'Striker' });
