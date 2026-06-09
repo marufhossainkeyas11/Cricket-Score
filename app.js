@@ -1583,23 +1583,43 @@ function confirmBowler() {
 }
 
 function getMaxOvForBowler(name, m) {
-  const b = m.bowlMap[name];
-  if (b && b.maxOv !== null) return b.maxOv;
-  return getTierMaxOv(m);
+  const tiers = G.setup.tiers;
+  const bowlMap = m.bowlMap;
+  const b = bowlMap[name];
+  const myOv = b ? Math.floor(b.balls / 6) : 0;
+
+  const confirmedInTier = new Array(tiers.length).fill(0);
+  
+  Object.entries(bowlMap).forEach(([bName, bData]) => {
+    if (bName === name) return;
+    const theirOv = Math.floor(bData.balls / 6);
+    if (theirOv === 0) return;
+
+    for (let i = 0; i < tiers.length; i++) {
+      const nextLimit = i + 1 < tiers.length ? tiers[i + 1].maxOv : 0;
+      if (theirOv > nextLimit) {
+        confirmedInTier[i]++;
+        break;
+      }
+      if (i === tiers.length - 1) {
+        confirmedInTier[i]++;
+      }
+    }
+  });
+
+  for (let i = 0; i < tiers.length; i++) {
+    const t = tiers[i];
+    const cap = t.isRest ? Infinity : (t.count || 0);
+    if (confirmedInTier[i] < cap || t.isRest) {
+      return t.maxOv;
+    }
+  }
+
+  return tiers[tiers.length - 1]?.maxOv || 4;
 }
 
 function getTierMaxOv(m) {
-  const tiers    = G.setup.tiers;
-  const bowlMap  = m.bowlMap;
-
-  for (const t of tiers) {
-    if (t.isRest) return t.maxOv;
-    const usedInTier = Object.values(bowlMap).filter(
-      b => b.maxOv === t.maxOv && Math.floor(b.balls / 6) > 0
-    ).length;
-    if (usedInTier < t.count) return t.maxOv;
-  }
-  return tiers[tiers.length - 1]?.maxOv || 4;
+  return getMaxOvForBowler('__dummy__', m);
 }
 
 // ═══════════════════════════════════════════════
@@ -2055,7 +2075,8 @@ function renderBalls() {
   if (m.curBowler) {
     const b   = m.bowlMap[m.curBowler];
     const bov = Math.floor((b?.balls || 0) / 6), bbl = (b?.balls || 0) % 6;
-    $('bowlerBadge').textContent = `${m.curBowler} · ${bov}.${bbl}/${b?.maxOv || '?'} ov`;
+    const maxOv = b.maxOv !== null ? b.maxOv : getMaxOvForBowler(name, m);
+    $('bowlerBadge').textContent = `${m.curBowler} · ${bov}.${bbl}/${maxOv || '?'} ov`;
   } else {
     $('bowlerBadge').textContent = m.needBowler ? 'Select bowler ↑' : '—';
   }
