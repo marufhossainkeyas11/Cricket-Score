@@ -1,4 +1,4 @@
-const CACHE_VER  = 'v2.3.8';
+const CACHE_VER  = 'v2.3.9';
 const SHELL_KEY  = `cs-shell-${CACHE_VER}`;
 const MEDIA_KEY  = `cs-media-${CACHE_VER}`;
 const FONT_KEY   = `cs-fonts-${CACHE_VER}`;
