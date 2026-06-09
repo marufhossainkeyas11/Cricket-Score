@@ -728,7 +728,7 @@
         sessionStorage.removeItem('swUpdated');
         const ch = new MessageChannel();
         ch.port1.onmessage = ({ data }) => {
-          showToast(`Updated to v${data?.version ?? 'unknown'}`, true);
+          showToast(`Updated to ${data?.version ?? 'unknown'}`, true);
         };
         navigator.serviceWorker.controller?.postMessage({ type: 'GET_VERSION' }, [ch.port2]);
       }
