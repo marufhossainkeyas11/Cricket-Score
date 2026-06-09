@@ -868,10 +868,13 @@ function addBowlerBall(runs, isLegal, extra) {
   const m = G.match;
   if (!m.curBowler) return;
   const b = m.bowlMap[m.curBowler];
-  b.runs += runs;
+
+  const isByeType = extra === 'bye' || extra === 'legbye';
+  if (!isByeType) b.runs += runs;
+
   if (isLegal) b.balls++;
-  if (extra === 'wide')  b.wides   = (b.wides   || 0) + 1;
-  if (extra === 'noball') b.noballs = (b.noballs || 0) + 1;
+  if (extra === 'wide')   b.wides   = (b.wides   || 0) + 1;
+  if (extra === 'noball') b.noballs = (b.noballs  || 0) + 1;
 }
 
 function swapBat() {
@@ -1257,10 +1260,14 @@ function confirmExtra() {
     addBowlerBall(totalRuns, false, 'wide');
     if (byeRuns % 2 === 1 && !isLastManAlone()) swapBat();
     
-  } else if (type === 'bye') {
-    m.extras.bye = (m.extras.bye || 0) + totalRuns;
+  } else if (type === 'bye' || type === 'legbye') {
+    if (type === 'bye') {
+      m.extras.bye    = (m.extras.bye    || 0) + totalRuns;
+    } else {
+      m.extras.legbye = (m.extras.legbye || 0) + totalRuns;
+    }
     m.bat[m.striker].balls++;
-    addBowlerBall(totalRuns, true, null);
+    addBowlerBall(totalRuns, true, type); // 'bye' বা 'legbye' pass হবে
     if (totalRuns % 2 === 1 && !isLastManAlone()) swapBat();
   }
 
