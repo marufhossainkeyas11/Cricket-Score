@@ -13,7 +13,7 @@
   "categories": ["sports", "utilities"],
   "icons": [
     {
-      "src": "pwmLogo.svg",
+      "src": "pwmlogo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
