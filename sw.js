@@ -1,4 +1,4 @@
-const CACHE_VER  = 'v2.3.9';
+const CACHE_VER  = 'v2.4.0';
 const SHELL_KEY  = `cs-shell-${CACHE_VER}`;
 const MEDIA_KEY  = `cs-media-${CACHE_VER}`;
 const FONT_KEY   = `cs-fonts-${CACHE_VER}`;
@@ -106,20 +106,19 @@ async function navigationHandler(req) {
 }
 
 async function cacheFirstRefresh(req) {
-  const cached = await caches.match(req);
-
+  const cache = await caches.open(SHELL_KEY);
+  const cached = await cache.match(req);
+  
   fetch(req).then(async res => {
-    if (res.ok) {
-      const cache = await caches.open(SHELL_KEY);
-      cache.put(req, res.clone());
-    }
+    if (res.ok) cache.put(req, res.clone());
   }).catch(() => {});
-
+  
   return cached || await fetch(req).catch(() => offlineFallback(req));
 }
 
 async function cacheFirstLazy(req, key) {
-  const cached = await caches.match(req);
+  const cache = await caches.open(key);
+  const cached = await cache.match(req);
   if (cached) return cached;
 
   try {
@@ -156,6 +155,7 @@ async function networkFirstExternal(req) {
 }
 
 async function offlineFallback(req) {
-  const cached = await caches.match('./index.html') || await caches.match('./');
+  const cache = await caches.open(SHELL_KEY);
+  const cached = await cache.match('./index.html') || await cache.match('./');
   return cached || new Response('<h2>Offline</h2>', { headers: { 'Content-Type': 'text/html' } });
 }
