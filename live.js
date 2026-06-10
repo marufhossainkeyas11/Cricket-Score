@@ -11,15 +11,34 @@ const LivePush = (() => {
   const STORAGE_KEY = 'lp_config';
   const PROBE_URL   = `${API_BASE}/api/health`;   // lightweight GET endpoint
   const PROBE_MS    = 8000;                        // re-check connectivity every 8 s
-
+  const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"/>
+    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"/>
+  </svg>`;
+  const EYE_CLOSE = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"/>
+    <path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"/>
+  </svg>`;
+  
   let _enabled  = false;
   let _matchId  = '';
   let _token    = '';
   let _password = '';
   let _pushTimer   = null;
   let _probeTimer  = null;
-  let _online      = navigator.onLine;             // initial assumption
+  let _online      = navigator.onLine;  
 
+  window.togglePassword = function(input, btn) {
+    input = typeof input === 'string' ?
+      document.querySelector(input) :
+      input;
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.innerHTML = isPassword ? EYE_OPEN : EYE_CLOSE;
+  };
+
+  
   // ─────────────────────────────────────────────
   //  Connectivity
   // ─────────────────────────────────────────────
@@ -398,11 +417,28 @@ const LivePush = (() => {
 
         <div>
           <span class="lp-section-label">Scorer Token — keep this secret</span>
-          <div class="lp-field">
+          <div class="lp-field" style="position:relative;">
             <input id="lp-token"
                    type="password"
                    placeholder="Generate a secure token"
-                   value="${_token}" />
+                   value="${_token}"
+                   style="padding-right:40px;" />
+            <button
+              type="button"
+              onclick="togglePassword('#lp-token', this)"
+              style="
+                all:unset;
+                position:absolute;
+                right:92px;
+                top:50%;
+                transform:translateY(-50%);
+                z-index:2;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+              ">
+              ${EYE_CLOSE}
+            </button>
             <button class="lp-gen" onclick="LivePush._genToken()">Generate</button>
           </div>
         </div>
@@ -491,7 +527,7 @@ const LivePush = (() => {
     if (viewRow) viewRow.style.display = 'flex';
 
     showStatus('Saved — broadcasting now…', 'ok');
-    push();
+    _forcePush();
   }
 
   function _copyLink() {
@@ -504,7 +540,15 @@ const LivePush = (() => {
   // ─────────────────────────────────────────────
   //  Push
   // ─────────────────────────────────────────────
-  async function push() {
+  async function _forcePush() {
+    clearTimeout(_timer);
+    const old = _enabled;
+    _enabled = true;
+    await push(true);
+    _enabled = old;
+  }
+  
+  async function push(force = false) {
     if (!_enabled || !_matchId || !_token) return;
     if (typeof G === 'undefined' || !G.match) return;
 
@@ -518,6 +562,7 @@ const LivePush = (() => {
       inn1FullData: G.inn1FullData || null,
       screen:       G.screen || 'scoring',
       resultData:   G.resultData  || null,
+      force:        force,
     };
 
     try {
