@@ -1,24 +1,81 @@
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 //  LIVE PUSH MODULE — Cricket Score PWA
-//  index.html এ app.js এর পরে load করুন:
+//  Load after app.js in index.html:
 //  <script src="./live.js"></script>
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 
 const LivePush = (() => {
 
   const API_BASE    = 'https://livecs.vercel.app';
   const PUSH_MS     = 3000;
   const STORAGE_KEY = 'lp_config';
+  const PROBE_URL   = `${API_BASE}/api/health`;   // lightweight GET endpoint
+  const PROBE_MS    = 8000;                        // re-check connectivity every 8 s
 
   let _enabled  = false;
   let _matchId  = '';
   let _token    = '';
   let _password = '';
-  let _timer    = null;
+  let _pushTimer   = null;
+  let _probeTimer  = null;
+  let _online      = navigator.onLine;             // initial assumption
 
-  // ── Match ID auto-generate ───────────────────
+  // ─────────────────────────────────────────────
+  //  Connectivity
+  // ─────────────────────────────────────────────
+  async function probeConnectivity() {
+    if (!navigator.onLine) {
+      _setOnline(false);
+      return false;
+    }
+    try {
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 4000);
+      const r    = await fetch(`${PROBE_URL}?_=${Date.now()}`, {
+        method: 'GET',
+        cache:  'no-store',
+        signal: ctrl.signal,
+      });
+      clearTimeout(tid);
+      _setOnline(r.ok || r.status < 500);
+    } catch {
+      _setOnline(false);
+    }
+    return _online;
+  }
+
+  function _setOnline(value) {
+    if (_online === value) return;
+    _online = value;
+    _applyOnlineState();
+  }
+
+  function _applyOnlineState() {
+    const root = document.getElementById('lp-root');
+    if (!root) return;
+
+    if (_online) {
+      root.classList.remove('lp-hidden');
+      root.classList.add('lp-visible');
+      showStatus(_enabled ? '✓ Live broadcast active' : 'Ready to broadcast', _enabled ? 'ok' : '');
+    } else {
+      // Close panel if open, then hide everything
+      document.getElementById('lp-panel')?.classList.remove('open');
+      root.classList.remove('lp-visible');
+      root.classList.add('lp-hidden');
+    }
+  }
+
+  function _startProbeLoop() {
+    clearInterval(_probeTimer);
+    _probeTimer = setInterval(probeConnectivity, PROBE_MS);
+  }
+
+  // ─────────────────────────────────────────────
+  //  Match ID & Token generators
+  // ─────────────────────────────────────────────
   function generateMatchId() {
-    const s = G?.setup;
+    const s  = G?.setup;
     const t1 = (s?.team1 || 'Team1').replace(/\s+/g, '').slice(0, 8).toLowerCase();
     const t2 = (s?.team2 || 'Team2').replace(/\s+/g, '').slice(0, 8).toLowerCase();
     const d  = new Date();
@@ -27,16 +84,17 @@ const LivePush = (() => {
     return `${t1}-vs-${t2}-${dt}-${rnd}`;
   }
 
-  // ── Token generate ───────────────────────────
   function generateToken() {
     return Math.random().toString(36).slice(2, 10) +
            Math.random().toString(36).slice(2, 6);
   }
 
-  // ── Config ────────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  Config persistence
+  // ─────────────────────────────────────────────
   function loadConfig() {
     try {
-      const c = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const c  = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       _enabled  = !!c.enabled;
       _matchId  = c.matchId  || '';
       _token    = c.token    || '';
@@ -53,87 +111,319 @@ const LivePush = (() => {
     } catch {}
   }
 
-  // ── Init ─────────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  Init
+  // ─────────────────────────────────────────────
   function init() {
     loadConfig();
     injectUI();
-    if (_enabled && _matchId && _token) showStatus('⟳ Ready', 'ok');
+
+    // Browser-level online/offline events for instant response
+    window.addEventListener('online',  () => probeConnectivity());
+    window.addEventListener('offline', () => _setOnline(false));
+
+    // Initial probe then start loop
+    probeConnectivity().then(() => _startProbeLoop());
   }
 
-  // ── UI ────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  Styles
+  // ─────────────────────────────────────────────
+  const CSS = `
+    /* ── Root container ── */
+    #lp-root {
+      position: fixed;
+      bottom: 76px;
+      right: 14px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      font-family: var(--f);
+    }
+    
+    /* ── Visibility transitions ── */
+    #lp-root {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity .3s ease, transform .3s ease;
+      pointer-events: auto;
+    }
+    #lp-root.lp-hidden  { opacity: 0; transform: translateY(16px); pointer-events: none; }
+    #lp-root.lp-visible { opacity: 1; transform: translateY(0);    pointer-events: auto; }
+    
+    /* ── Panel ── */
+    #lp-panel {
+      background: var(--bg2);
+      border: 1px solid var(--bdr);
+      border-radius: var(--r);
+      padding: 18px;
+      width: 300px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 0 1px var(--o-sm);
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      transform-origin: bottom right;
+    }
+    #lp-panel.open {
+      display: flex;
+      animation: lp-panel-in .2s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes lp-panel-in {
+      from { opacity: 0; transform: scale(.92) translateY(10px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0);    }
+    }
+    
+    /* ── Typography ── */
+    .lp-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--t3);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .lp-panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.2px;
+    }
+    
+    /* ── Inputs ── */
+    #lp-panel input {
+      width: 100%;
+      background: var(--sf2);
+      border: 1px solid var(--bdr);
+      border-radius: var(--rs);
+      color: var(--text);
+      font-family: var(--m);
+      font-size: 12px;
+      padding: 9px 12px;
+      box-sizing: border-box;
+      transition: border-color var(--trans), box-shadow var(--trans);
+    }
+    #lp-panel input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(21,101,192,.15);
+    }
+    #lp-panel input::placeholder { color: var(--t3); }
+    
+    /* ── Row & field layouts ── */
+    .lp-row   { display: flex; align-items: center; justify-content: space-between; }
+    .lp-field { display: flex; gap: 6px; align-items: center; }
+    .lp-field input { flex: 1; min-width: 0; }
+    
+    /* ── Toggle switch ── */
+    #lp-toggle {
+      width: 42px;
+      height: 24px;
+      border-radius: 12px;
+      background: var(--sf2);
+      border: 1px solid var(--bdr);
+      cursor: pointer;
+      position: relative;
+      transition: background var(--trans), border-color var(--trans);
+      flex-shrink: 0;
+    }
+    #lp-toggle.on { background: var(--blue); border-color: rgba(21,101,192,.4); }
+    #lp-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--t2);
+      transition: transform .2s cubic-bezier(.34,1.56,.64,1), background var(--trans);
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    #lp-toggle.on::after { transform: translateX(18px); background: #fff; }
+    
+    /* ── Generate buttons ── */
+    .lp-gen {
+      background: var(--o-sm);
+      border: 1px solid var(--bdr);
+      color: var(--t2);
+      border-radius: var(--rs);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 8px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background var(--trans), color var(--trans), transform .1s;
+      letter-spacing: .3px;
+    }
+    .lp-gen:hover  { background: var(--o-md); color: var(--text); }
+    .lp-gen:active { transform: scale(.95); }
+    
+    /* ── Save button ── */
+    #lp-save {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--rs);
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      letter-spacing: .2px;
+      transition: background var(--trans), transform .1s, box-shadow var(--trans);
+      box-shadow: 0 4px 14px rgba(21,101,192,.3);
+    }
+    #lp-save:hover  { background: var(--blue2); box-shadow: 0 6px 18px rgba(21,101,192,.4); }
+    #lp-save:active { transform: scale(.98); }
+    
+    /* ── Status bar ── */
+    #lp-status {
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: var(--rs);
+      background: var(--o-sm);
+      color: var(--t3);
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background var(--trans), color var(--trans);
+      font-weight: 500;
+      letter-spacing: .1px;
+    }
+    #lp-status.ok  { color: var(--grn); background: rgba(34,197,94,.07); }
+    #lp-status.err { color: var(--red2); background: rgba(211,47,47,.07); }
+    
+    /* ── Viewer link row ── */
+    .lp-link-row { display: flex; gap: 7px; align-items: center; }
+    .lp-link {
+      flex: 1;
+      font-size: 10px;
+      color: var(--blue2);
+      font-family: var(--m);
+      word-break: break-all;
+      text-decoration: none;
+      line-height: 1.5;
+    }
+    .lp-link:hover { color: var(--text); text-decoration: underline; }
+    .lp-copy {
+      background: var(--o-sm);
+      border: 1px solid var(--bdr);
+      color: var(--t2);
+      border-radius: var(--rs);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background var(--trans), transform .1s;
+    }
+    .lp-copy:hover  { background: var(--o-md); color: var(--text); }
+    .lp-copy:active { transform: scale(.95); }
+    
+    /* ── FAB ── */
+    #lp-fab {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--sf2);
+      border: 1px solid var(--bdr);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+      font-size: 20px;
+      color: var(--text);
+      transition: transform .2s cubic-bezier(.34,1.56,.64,1), background var(--trans), box-shadow var(--trans);
+    }
+    #lp-fab:hover  { transform: scale(1.1); box-shadow: 0 6px 24px rgba(0,0,0,.6); }
+    #lp-fab:active { transform: scale(.95); }
+    #lp-fab.active {
+      background: var(--blue);
+      border-color: rgba(21,101,192,.4);
+      box-shadow: 0 4px 20px rgba(21,101,192,.4);
+      animation: lp-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes lp-pulse {
+      0%, 100% { box-shadow: 0 4px 20px rgba(21,101,192,.4); }
+      50%       { box-shadow: 0 4px 28px rgba(21,101,192,.65), 0 0 0 6px rgba(21,101,192,.1); }
+    }
+    
+    /* ── Divider ── */
+    .lp-divider { height: 1px; background: var(--bdr); margin: 0 -18px; }
+  `;
+
+  // ─────────────────────────────────────────────
+  //  Inject UI
+  // ─────────────────────────────────────────────
   function injectUI() {
     if (document.getElementById('lp-root')) return;
 
-    const style = document.createElement('style');
-    style.textContent = `
-      #lp-root{position:fixed;bottom:70px;right:12px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-family:var(--f,'Inter',sans-serif)}
-      #lp-panel{background:#1a2332;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;width:290px;box-shadow:0 8px 32px rgba(0,0,0,.6);display:none;flex-direction:column;gap:12px}
-      #lp-panel.open{display:flex}
-      #lp-panel .lp-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#4a5568;display:block;margin-bottom:4px}
-      #lp-panel input{width:100%;background:#242e42;border:1px solid rgba(255,255,255,.08);border-radius:6px;color:#e6edf3;font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 10px}
-      #lp-panel input:focus{outline:none;border-color:rgba(96,165,250,.4)}
-      .lp-row{display:flex;align-items:center;justify-content:space-between}
-      .lp-title{font-size:14px;font-weight:700;color:#e6edf3}
-      #lp-toggle{width:40px;height:22px;border-radius:11px;background:#2d3a52;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
-      #lp-toggle.on{background:#1565C0}
-      #lp-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
-      #lp-toggle.on::after{transform:translateX(18px)}
-      .lp-field{display:flex;gap:6px;align-items:center}
-      .lp-field input{flex:1}
-      .lp-gen{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.25);color:#60a5fa;border-radius:6px;font-size:11px;font-weight:700;padding:7px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-      .lp-gen:hover{background:rgba(96,165,250,.2)}
-      #lp-save{background:#1565C0;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;width:100%}
-      #lp-save:hover{background:#1976D2}
-      #lp-status{font-size:11px;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,.04);color:#4a5568;min-height:30px;display:flex;align-items:center;gap:6px}
-      #lp-status.ok{color:#22c55e;background:rgba(34,197,94,.08)}
-      #lp-status.err{color:#f87171;background:rgba(248,113,113,.08)}
-      .lp-link-row{display:flex;gap:6px;align-items:center}
-      .lp-link{flex:1;font-size:10px;color:#60a5fa;font-family:monospace;word-break:break-all;text-decoration:none}
-      .lp-copy{background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;border-radius:5px;font-size:11px;font-weight:700;padding:5px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-      #lp-fab{width:46px;height:46px;border-radius:50%;background:#1565C0;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.5);font-size:20px;color:#fff;transition:transform .15s}
-      #lp-fab:hover{transform:scale(1.08)}
-      #lp-fab.active{background:#22c55e}
-      .lp-divider{height:1px;background:rgba(255,255,255,.06);margin:0 -16px}
-    `;
-    document.head.appendChild(style);
+    const styleEl = document.createElement('style');
+    styleEl.textContent = CSS;
+    document.head.appendChild(styleEl);
 
     const root = document.createElement('div');
     root.id = 'lp-root';
+
+    // Apply initial hidden state immediately (before probe resolves)
+    if (!navigator.onLine) root.classList.add('lp-hidden');
+
     root.innerHTML = `
       <div id="lp-panel">
         <div class="lp-row">
-          <span class="lp-title">📡 Live Telecast</span>
-          <button id="lp-toggle" class="${_enabled ? 'on' : ''}" onclick="LivePush._toggleEnable()"></button>
+          <span class="lp-panel-title">📡 Live Broadcast</span>
+          <button id="lp-toggle" class="${_enabled ? 'on' : ''}"
+                  aria-label="Toggle live broadcast"
+                  onclick="LivePush._toggleEnable()"></button>
         </div>
         <div class="lp-divider"></div>
 
         <div>
-          <span class="lp-label">Match ID</span>
+          <span class="lp-section-label">Match ID</span>
           <div class="lp-field">
-            <input id="lp-match" placeholder="auto-generate করুন →" maxlength="64" value="${_matchId}" />
+            <input id="lp-match"
+                   placeholder="Generate or enter a match ID"
+                   maxlength="64"
+                   value="${_matchId}" />
             <button class="lp-gen" onclick="LivePush._genId()">Generate</button>
           </div>
         </div>
 
         <div>
-          <span class="lp-label">Scorer Token (secret)</span>
+          <span class="lp-section-label">Scorer Token — keep this secret</span>
           <div class="lp-field">
-            <input id="lp-token" type="password" placeholder="auto-generate করুন →" value="${_token}" />
+            <input id="lp-token"
+                   type="password"
+                   placeholder="Generate a secure token"
+                   value="${_token}" />
             <button class="lp-gen" onclick="LivePush._genToken()">Generate</button>
           </div>
         </div>
 
         <div>
-          <span class="lp-label">Password (optional — viewer দেখতে লাগবে)</span>
-          <input id="lp-pass" type="text" placeholder="না চাইলে খালি রাখুন" value="${_password}" />
+          <span class="lp-section-label">Viewer Password <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#374151">— optional</span></span>
+          <input id="lp-pass"
+                 type="text"
+                 placeholder="Leave blank for public access"
+                 value="${_password}" />
         </div>
 
-        <button id="lp-save" onclick="LivePush._save()">✓ Save &amp; Activate</button>
+        <button id="lp-save" onclick="LivePush._save()">Activate Broadcast</button>
 
-        <div id="lp-status">Live telecast ${_enabled ? 'চালু' : 'বন্ধ'}</div>
+        <div id="lp-status">
+          ${_enabled ? '✓ Live broadcast active' : 'Broadcast is off'}
+        </div>
 
-        <div class="lp-link-row" id="lp-viewer-row" style="display:${_matchId ? 'flex' : 'none'}">
-          <a class="lp-link" id="lp-viewer-link" target="_blank"
+        <div class="lp-link-row" id="lp-viewer-row"
+             style="display:${_matchId ? 'flex' : 'none'}">
+          <a class="lp-link" id="lp-viewer-link" target="_blank" rel="noopener"
              href="${_matchId ? `${API_BASE}/match/${encodeURIComponent(_matchId)}` : '#'}">
             ${_matchId ? `${API_BASE}/match/${_matchId}` : ''}
           </a>
@@ -141,19 +431,24 @@ const LivePush = (() => {
         </div>
       </div>
 
-      <button id="lp-fab" class="${_enabled ? 'active' : ''}" onclick="LivePush._togglePanel()">📡</button>
+      <button id="lp-fab"
+              class="${_enabled ? 'active' : ''}"
+              aria-label="Open live broadcast settings"
+              onclick="LivePush._togglePanel()">📡</button>
     `;
+
     document.body.appendChild(root);
   }
 
-  // ── Actions ───────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  Panel actions
+  // ─────────────────────────────────────────────
   function _togglePanel() {
     document.getElementById('lp-panel').classList.toggle('open');
   }
 
   function _genId() {
-    const id = generateMatchId();
-    document.getElementById('lp-match').value = id;
+    document.getElementById('lp-match').value = generateMatchId();
   }
 
   function _genToken() {
@@ -164,7 +459,10 @@ const LivePush = (() => {
     _enabled = !_enabled;
     document.getElementById('lp-toggle').className = _enabled ? 'on' : '';
     document.getElementById('lp-fab').className    = _enabled ? 'active' : '';
-    showStatus(_enabled ? '✓ চালু — পরের ball এ push হবে' : 'বন্ধ', _enabled ? 'ok' : '');
+    showStatus(
+      _enabled ? '✓ Broadcast on — syncing next delivery' : 'Broadcast off',
+      _enabled ? 'ok' : ''
+    );
     saveConfig();
     if (_enabled && _matchId && _token) push();
   }
@@ -174,13 +472,14 @@ const LivePush = (() => {
     const tok  = document.getElementById('lp-token')?.value.trim();
     const pass = document.getElementById('lp-pass')?.value.trim();
 
-    if (!mid)             { showStatus('Match ID দিন বা Generate করুন', 'err'); return; }
-    if (!tok || tok.length < 8) { showStatus('Token Generate করুন (min 8 char)', 'err'); return; }
+    if (!mid)                    { showStatus('Enter or generate a Match ID first.', 'err'); return; }
+    if (!tok || tok.length < 8)  { showStatus('Generate a token (minimum 8 characters).', 'err'); return; }
 
     _matchId  = mid;
     _token    = tok;
     _password = pass;
     _enabled  = true;
+
     document.getElementById('lp-toggle').className = 'on';
     document.getElementById('lp-fab').className    = 'active';
     saveConfig();
@@ -191,18 +490,20 @@ const LivePush = (() => {
     if (linkEl)  { linkEl.href = link; linkEl.textContent = `${API_BASE}/match/${_matchId}`; }
     if (viewRow) viewRow.style.display = 'flex';
 
-    showStatus('✓ Saved! Pushing…', 'ok');
+    showStatus('Saved — broadcasting now…', 'ok');
     push();
   }
 
   function _copyLink() {
     const link = `${API_BASE}/match/${encodeURIComponent(_matchId)}`;
     navigator.clipboard?.writeText(link)
-      .then(() => showStatus('✓ Link copied!', 'ok'))
-      .catch(() => showStatus('Copy failed', 'err'));
+      .then(() => showStatus('✓ Link copied to clipboard', 'ok'))
+      .catch(() => showStatus('Copy failed — try manually.', 'err'));
   }
 
-  // ── Push ──────────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  Push
+  // ─────────────────────────────────────────────
   async function push() {
     if (!_enabled || !_matchId || !_token) return;
     if (typeof G === 'undefined' || !G.match) return;
@@ -226,15 +527,21 @@ const LivePush = (() => {
         body:    JSON.stringify(payload),
       });
       const d = await r.json();
-      if (!r.ok) { showStatus(`✗ ${d.error || r.status}`, 'err'); return; }
+      if (!r.ok) { showStatus(`Error: ${d.error || r.status}`, 'err'); return; }
       const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
-      showStatus(`✓ Live · ${t}`, 'ok');
+      showStatus(`✓ Live · updated ${t}`, 'ok');
+      // Confirm we're online after a successful push
+      _setOnline(true);
     } catch {
-      showStatus('✗ Network error', 'err');
+      showStatus('Network error — will retry', 'err');
+      // Could be intermittent; probe will re-evaluate
+      probeConnectivity();
     }
   }
 
-  // ── Ownership release — doNewMatch() এ call করো ──
+  // ─────────────────────────────────────────────
+  //  Ownership release — call in doNewMatch()
+  // ─────────────────────────────────────────────
   async function releaseOwnership() {
     if (!_matchId || !_token) return;
     try {
@@ -244,15 +551,14 @@ const LivePush = (() => {
         body:    JSON.stringify({ matchId: _matchId, scorerToken: _token }),
       });
     } catch {}
-    // local config clear
     _enabled = false; _matchId = ''; _token = ''; _password = '';
     saveConfig();
   }
 
   function schedulePush() {
     if (!_enabled) return;
-    clearTimeout(_timer);
-    _timer = setTimeout(() => push(), PUSH_MS);
+    clearTimeout(_pushTimer);
+    _pushTimer = setTimeout(() => push(), PUSH_MS);
   }
 
   function showStatus(msg, type = '') {
@@ -262,14 +568,22 @@ const LivePush = (() => {
     el.className   = type;
   }
 
-  return { init, push, schedulePush, releaseOwnership, _togglePanel, _toggleEnable, _genId, _genToken, _save, _copyLink };
+  // ─────────────────────────────────────────────
+  //  Public API
+  // ─────────────────────────────────────────────
+  return {
+    init, push, schedulePush, releaseOwnership,
+    _togglePanel, _toggleEnable, _genId, _genToken, _save, _copyLink,
+  };
 })();
 
-// ── app.js monkey-patch ───────────────────────
+// ─────────────────────────────────────────────
+//  app.js integration — monkey-patch on load
+// ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   LivePush.init();
 
-  // saveState wrap
+  // Wrap saveState so every score update triggers a push
   const _origSave = window.saveState;
   if (typeof _origSave === 'function') {
     window.saveState = function (...args) {
@@ -278,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // doNewMatch / doRematch wrap — ownership release
+  // Release ownership on new match or rematch
   const _origNew = window.doNewMatch;
   if (typeof _origNew === 'function') {
     window.doNewMatch = function (...args) {
