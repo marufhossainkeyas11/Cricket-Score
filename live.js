@@ -429,8 +429,9 @@ const LivePush = (() => {
               style="
                 all:unset;
                 position:absolute;
-                right:92px;
+                right:82px;
                 top:50%;
+                padding:5px;
                 transform:translateY(-50%);
                 z-index:2;
                 cursor:pointer;
@@ -445,10 +446,30 @@ const LivePush = (() => {
 
         <div>
           <span class="lp-section-label">Viewer Password <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#374151">— optional</span></span>
-          <input id="lp-pass"
-                 type="text"
-                 placeholder="Leave blank for public access"
-                 value="${_password}" />
+          <div style="position:relative;">
+            <input id="lp-pass"
+                   type="password"
+                   placeholder="(optional) Enter The Password"
+                   value="${_password}"
+                   style="padding-right:40px;"/>
+            <button
+              type="button"
+              onclick="togglePassword('#lp-pass', this)"
+              style="
+                all:unset;
+                position:absolute;
+                right:7px;
+                top:50%;
+                padding:5px;
+                transform:translateY(-50%);
+                z-index:2;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+              ">
+              ${EYE_CLOSE}
+            </button>
+          </div>
         </div>
 
         <button id="lp-save" onclick="LivePush._save()">Activate Broadcast</button>
