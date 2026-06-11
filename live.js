@@ -524,32 +524,47 @@ const LivePush = (() => {
     if (_enabled && _matchId && _token) push();
   }
 
-  function _save() {
-    const mid  = document.getElementById('lp-match')?.value.trim();
-    const tok  = document.getElementById('lp-token')?.value.trim();
-    const pass = document.getElementById('lp-pass')?.value.trim();
+  async function _save() {
+  const mid  = document.getElementById('lp-match')?.value.trim();
+  const tok  = document.getElementById('lp-token')?.value.trim();
+  const pass = document.getElementById('lp-pass')?.value.trim();
 
-    if (!mid)                    { showStatus('A Match ID is required to start broadcasting', 'err'); return; }
-    if (!tok || tok.length < 8)  { showStatus('A secure token of at least 8 characters is required', 'err'); return; }
+  if (!mid)                    { showStatus('A Match ID is required to start broadcasting', 'err'); return; }
+  if (!tok || tok.length < 8)  { showStatus('A secure token of at least 8 characters is required', 'err'); return; }
+  if (pass && pass.length < 4) { showStatus('Password must be at least 4 characters', 'err'); return; }
 
-    _matchId  = mid;
-    _token    = tok;
-    _password = pass;
-    _enabled  = true;
+  const matchActive  = typeof G !== 'undefined' && G.match && !G.match.done && G.match.balls > 0;
+  const tokenChanged = _token && tok && tok !== _token;
 
-    document.getElementById('lp-toggle').className = 'on';
-    document.getElementById('lp-fab').className    = 'active';
-    saveConfig();
-
-    const link    = `${API_BASE}/match/${encodeURIComponent(_matchId)}`;
-    const linkEl  = document.getElementById('lp-viewer-link');
-    const viewRow = document.getElementById('lp-viewer-row');
-    if (linkEl)  { linkEl.href = link; linkEl.textContent = `${API_BASE}/match/${_matchId}`; }
-    if (viewRow) viewRow.style.display = 'flex';
-
-    showStatus('Broadcast activated successfully', 'ok');
-    _forcePush();
+  if (matchActive && tokenChanged && _matchId === mid) {
+    showStatus('Updating token — please wait…', '');
+    try {
+      await fetch(`${API_BASE}/api/score`, {
+        method:  'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ matchId: _matchId, scorerToken: _token }),
+      });
+    } catch {}
   }
+
+  _matchId  = mid;
+  _token    = tok;
+  _password = pass;
+  _enabled  = true;
+
+  document.getElementById('lp-toggle').className = 'on';
+  document.getElementById('lp-fab').className    = 'active';
+  saveConfig();
+
+  const link    = `${API_BASE}/match/${encodeURIComponent(_matchId)}`;
+  const linkEl  = document.getElementById('lp-viewer-link');
+  const viewRow = document.getElementById('lp-viewer-row');
+  if (linkEl)  { linkEl.href = link; linkEl.textContent = `${API_BASE}/match/${_matchId}`; }
+  if (viewRow) viewRow.style.display = 'flex';
+
+  showStatus('Broadcast activated successfully', 'ok');
+  _forcePush();
+}
 
   function _copyLink() {
     const link = `${API_BASE}/match/${encodeURIComponent(_matchId)}`;
