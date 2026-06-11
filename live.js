@@ -76,7 +76,7 @@ const LivePush = (() => {
     if (_online) {
       root.classList.remove('lp-hidden');
       root.classList.add('lp-visible');
-      showStatus(_enabled ? '✓ Live broadcast active' : 'Ready to broadcast', _enabled ? 'ok' : '');
+      showStatus(_enabled ? 'Broadcast is active' : 'Ready to broadcast', _enabled ? 'ok' : '');
     } else {
       // Close panel if open, then hide everything
       document.getElementById('lp-panel')?.classList.remove('open');
@@ -475,7 +475,7 @@ const LivePush = (() => {
         <button id="lp-save" onclick="LivePush._save()">Activate Broadcast</button>
 
         <div id="lp-status">
-          ${_enabled ? '✓ Live broadcast active' : 'Broadcast is off'}
+          ${_enabled ? 'Broadcast is active' : 'Broadcast is inactive'}
         </div>
 
         <div class="lp-link-row" id="lp-viewer-row"
@@ -517,7 +517,7 @@ const LivePush = (() => {
     document.getElementById('lp-toggle').className = _enabled ? 'on' : '';
     document.getElementById('lp-fab').className    = _enabled ? 'active' : '';
     showStatus(
-      _enabled ? '✓ Broadcast on — syncing next delivery' : 'Broadcast off',
+      _enabled ? 'Broadcasting — next update on delivery' : 'Broadcast paused',
       _enabled ? 'ok' : ''
     );
     saveConfig();
@@ -529,8 +529,8 @@ const LivePush = (() => {
     const tok  = document.getElementById('lp-token')?.value.trim();
     const pass = document.getElementById('lp-pass')?.value.trim();
 
-    if (!mid)                    { showStatus('Enter or generate a Match ID first.', 'err'); return; }
-    if (!tok || tok.length < 8)  { showStatus('Generate a token (minimum 8 characters).', 'err'); return; }
+    if (!mid)                    { showStatus('A Match ID is required to start broadcasting', 'err'); return; }
+    if (!tok || tok.length < 8)  { showStatus('A secure token of at least 8 characters is required', 'err'); return; }
 
     _matchId  = mid;
     _token    = tok;
@@ -547,22 +547,22 @@ const LivePush = (() => {
     if (linkEl)  { linkEl.href = link; linkEl.textContent = `${API_BASE}/match/${_matchId}`; }
     if (viewRow) viewRow.style.display = 'flex';
 
-    showStatus('Saved — broadcasting now…', 'ok');
+    showStatus('Broadcast activated successfully', 'ok');
     _forcePush();
   }
 
   function _copyLink() {
     const link = `${API_BASE}/match/${encodeURIComponent(_matchId)}`;
     navigator.clipboard?.writeText(link)
-      .then(() => showStatus('✓ Link copied to clipboard', 'ok'))
-      .catch(() => showStatus('Copy failed — try manually.', 'err'));
+      .then(() => showStatus('Viewer link copied', 'ok'))
+      .catch(() => showStatus('Copy failed — please copy manually', 'err'));
   }
 
   // ─────────────────────────────────────────────
   //  Push
   // ─────────────────────────────────────────────
   async function _forcePush() {
-    clearTimeout(_timer);
+    clearTimeout(_pushTimer);
     const old = _enabled;
     _enabled = true;
     await push(true);
@@ -595,11 +595,11 @@ const LivePush = (() => {
       const d = await r.json();
       if (!r.ok) { showStatus(`Error: ${d.error || r.status}`, 'err'); return; }
       const t = new Date().toLocaleTimeString('en-GB', { hour12: false });
-      showStatus(`✓ Live · updated ${t}`, 'ok');
+      showStatus(`Live — last synced at ${t}`, 'ok');
       // Confirm we're online after a successful push
       _setOnline(true);
     } catch {
-      showStatus('Network error — will retry', 'err');
+      showStatus('Connection lost — retrying automatically', 'err');
       // Could be intermittent; probe will re-evaluate
       probeConnectivity();
     }
