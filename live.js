@@ -420,7 +420,7 @@ const LivePush = (() => {
           <div class="lp-field" style="position:relative;">
             <input id="lp-token"
                    type="password"
-                   placeholder="Generate a secure token"
+                   placeholder="Generate or enter a secure token"
                    value="${_token}"
                    style="padding-right:40px;" />
             <button
@@ -445,11 +445,11 @@ const LivePush = (() => {
         </div>
 
         <div>
-          <span class="lp-section-label">Viewer Password <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#374151">— optional</span></span>
+          <span class="lp-section-label"> Secure Public Access<span style="font-weight:400;text-transform:none;letter-spacing:0;color:#374151">(<span style="font-style: italic;">At Least 4 Character</span>)</span></span>
           <div style="position:relative;">
             <input id="lp-pass"
                    type="password"
-                   placeholder="(optional) Enter The Password"
+                   placeholder="(Optional) Enter a secure password"
                    value="${_password}"
                    style="padding-right:40px;"/>
             <button
