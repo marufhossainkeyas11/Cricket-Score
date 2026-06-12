@@ -1025,23 +1025,9 @@ video {
      • A data URI (already loaded text)
      • An inline string (raw M3U content)
    ═══════════════════════════════════════════════════════ */
-const PLAYLISTS = [
-  {
-  name: "BangladeshI tv",
-  // Replace with your actual M3U URL(s) or raw content
-  url: "https://raw.githubusercontent.com/abusaeeidx/BDxTV/refs/heads/main/roar-zone-playlist.m3u",
-  // Optional: extra HTTP headers to pass when fetching the M3U file itself
-},
-{
-  name: "smart tv",
-  // Replace with your actual M3U URL(s) or raw content
-  url: "https://toffee-stream-keeper.lovable.app/toffee.m3u",
-  // Optional: extra HTTP headers to pass when fetching the M3U file itself
-}
-  // Add more:
-  // { name: "Sports Pack", url: "https://..." },
-  // { name: "News HD",     url: "https://..." },
-];
+const PLAYLISTS_JSON_URL = "https://raw.githubusercontent.com/marufhossainkeyas11/Cricket-Score/refs/heads/main/playlist.json";
+
+let PLAYLISTS = [];
 
 /* ═══════════════════════════════════════════════════════
    M3U PARSER
@@ -1237,6 +1223,13 @@ async function fetchM3U(pl) {
    INIT
    ═══════════════════════════════════════════════════════ */
 async function init() {
+  try {
+    const res = await fetch(PLAYLISTS_JSON_URL + '?t=' + Date.now());
+    PLAYLISTS = await res.json();
+  } catch (e) {
+    console.error('Failed to load playlists config:', e);
+    PLAYLISTS = [];
+  }
   //$('loadText').textContent = `Loading ${PLAYLISTS.length} playlist(s)…`;
 
   const results = await Promise.allSettled(
