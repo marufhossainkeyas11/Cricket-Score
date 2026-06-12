@@ -382,7 +382,6 @@ video {
 .vid-overlay {
   position: absolute;
   inset: 0;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -391,10 +390,9 @@ video {
 .big-play {
   width: 72px; height: 72px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid rgba(255,255,255,0.25);
   font-size: 28px;
   color: #fff;
   transition: all 0.15s ease;
@@ -407,20 +405,51 @@ video {
 .now-playing-bar {
   position: absolute;
   top: 0; left: 0; right: 0;
-  padding: 12px 16px;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+  padding: 17px 18px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   opacity: 0;
   transition: opacity var(--trans);
   pointer-events: none;
+  justify-content: space-between;
 }
 .video-wrap:hover .now-playing-bar,
 .video-wrap.controls-visible .now-playing-bar { opacity: 1; }
 
+:fullscreen .now-playing-bar,
+:-webkit-full-screen .now-playing-bar,
+:-moz-full-screen .now-playing-bar {
+  opacity: 1;
+  padding: 20px 28px;
+  gap: 14px;
+}
+
+.np-logo {
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.15);
+  display: none;
+  flex-shrink: 0;
+}
+.np-logo.show { display: block; }
+
+:fullscreen .np-logo,
+:-webkit-full-screen .np-logo,
+:-moz-full-screen .np-logo { display: block; }  /* fullscreen এ দেখাবে */
+
+:fullscreen .np-name,
+:-webkit-full-screen .np-name,
+:-moz-full-screen .np-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .live-badge {
-  padding: 2px 8px;
+  padding: 3px 9px;
   background: var(--red);
   border-radius: 4px;
   font-size: 10px;
@@ -429,15 +458,43 @@ video {
   color: #fff;
   text-transform: uppercase;
   font-family: var(--m);
-  animation: pulse-live 2s infinite;
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 5px;
 }
+.live-badge::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #fff;
+  display: inline-block;
+  animation: pulse-live 1.5s infinite;
+}
+.live-badge.visible {
+  display: flex;
+  animation: none;
+}
+@keyframes pulse-live {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+
+:fullscreen .live-badge.visible,
+:-webkit-full-screen .live-badge.visible,
+:-moz-full-screen .live-badge.visible {
+  font-size: 11px;
+  padding: 4px 11px;
+}
+
 @keyframes pulse-live {
   0%,100% { opacity: 1; }
   50% { opacity: 0.65; }
 }
 
 .np-name {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 1px 4px rgba(0,0,0,0.5);
@@ -754,7 +811,7 @@ video {
   .sidebar.mobile-open { transform: translateX(0); }
   .sidebar.collapsed { transform: translateX(-100%); width: 100%; }
 
-  .player-area { width: 100%; }
+  .player-area { width: 100%;}
 
   video { max-height: 240px; }
 
@@ -840,6 +897,24 @@ video {
 :-webkit-full-screen .player-area { width:100vw; height:100vh; background:#000; display:flex; flex-direction:column; justify-content:center; }
 :-webkit-full-screen .video-wrap { width:100vw; height:100vh; display:flex; flex-direction:column; justify-content:center; background:#000; }
 :-webkit-full-screen video { width:100vw; height:100vh; max-height:100vh; object-fit:contain; }
+
+/* Buffering Spiner*/
+.buffer-spinner {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 52px; height: 52px;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: var(--blue3);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: none;
+  z-index: 10;
+  pointer-events: none;
+}
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
 </style>
 </head>
 <body>
@@ -906,13 +981,18 @@ video {
     <!-- Video -->
     <div class="video-wrap" id="videoWrap">
       <video id="videoEl" playsinline></video>
-
+      
+      <div class="buffer-spinner" id="bufferSpinner"></div>
+      
       <div class="now-playing-bar" id="nowPlayingBar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <img class="np-logo" id="npLogo" src="" alt="">
+          <span class="np-name" id="npName">—</span>
+        </div>
         <span class="live-badge">LIVE</span>
-        <span class="np-name" id="npName">—</span>
       </div>
 
-      <div class="vid-overlay" id="vidOverlay">
+      <div class="vid-overlay" id="vidOverlay" >
         <div class="big-play" id="bigPlay">
           <svg id="bigPlayIcon" width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
         </div>
@@ -1408,6 +1488,15 @@ function playChannel(idx) {
   channelDetail.style.display = 'block';
   npName.textContent = ch.name;
   detailName.textContent = ch.name;
+  
+  const npLogo = $('npLogo');
+  if (ch.logo) {
+    npLogo.src = ch.logo;
+    npLogo.classList.add('show');
+  } else {
+    npLogo.src = '';
+    npLogo.classList.remove('show');
+  }
 
   // Logo
   detailLogo.innerHTML = ch.logo
@@ -1535,12 +1624,17 @@ function showError(msg) {
 
 function setStatus(text, color) {
   connStatus.textContent = text;
-  connDot.style.background = color === 'green' ? 'var(--grn)'
-    : color === 'red' ? 'var(--red)'
-    : color === 'yellow' ? 'var(--ylw)'
-    : 'var(--t3)';
-  if (color === 'green') connDot.style.boxShadow = '0 0 6px var(--grn)';
-  else connDot.style.boxShadow = 'none';
+  connDot.style.background = color === 'green' ? 'var(--grn)' :
+    color === 'red' ? 'var(--red)' :
+    color === 'yellow' ? 'var(--ylw)' :
+    'var(--t3)';
+  connDot.style.boxShadow = color === 'green' ? '0 0 6px var(--grn)' : 'none';
+  const liveBadge = document.querySelector('.live-badge');
+  if (color === 'green' && text === 'Playing') {
+    liveBadge.classList.add('visible');
+  } else {
+    liveBadge.classList.remove('visible');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1637,7 +1731,22 @@ function fmtTime(s) {
 function pad(n) { return String(n).padStart(2,'0'); }
 
 // Video events
-videoEl.addEventListener('playing', () => { state.isPlaying = true; updatePlayPauseIcon(); setStatus('Playing', 'green'); });
+videoEl.addEventListener('playing', () => {
+  state.isPlaying = true;
+  updatePlayPauseIcon();
+  setStatus('Playing', 'green');
+  $('bufferSpinner').style.display = 'none'; /* ← এটা যোগ করো */
+});
+videoEl.addEventListener('waiting', () => {
+  setStatus('Buffering…', 'yellow');
+  $('bufferSpinner').style.display = 'block';
+});
+videoEl.addEventListener('playing', () => {
+  $('bufferSpinner').style.display = 'none';
+});
+videoEl.addEventListener('canplay', () => {
+  $('bufferSpinner').style.display = 'none';
+});
 videoEl.addEventListener('pause',   () => { state.isPlaying = false; updatePlayPauseIcon(); setStatus('Paused', 'yellow'); });
 videoEl.addEventListener('waiting', () => setStatus('Buffering…', 'yellow'));
 videoEl.addEventListener('error',   () => {
