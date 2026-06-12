@@ -199,6 +199,11 @@ body {
   flex-shrink: 0;
 }
 
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 .search-wrap {
   position: relative;
 }
@@ -784,6 +789,57 @@ video {
 .empty-icon { font-size: 36px; opacity: 0.4; }
 .empty-title { font-size: 14px; font-weight: 600; color: var(--t2); }
 .empty-sub { font-size: 12px; color: var(--t3); }
+
+/* ── FULLSCREEN ─────────────────────────── */
+:fullscreen .topbar,
+:fullscreen .sidebar,
+:fullscreen .info-panel,
+:fullscreen .statusbar { display: none !important; }
+
+:fullscreen .main { display: block; height: 100vh; }
+
+:fullscreen .player-area {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+:fullscreen .video-wrap {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #000;
+}
+
+:fullscreen video {
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  object-fit: contain;
+}
+
+/* Firefox */
+:-moz-full-screen .topbar,
+:-moz-full-screen .sidebar,
+:-moz-full-screen .info-panel,
+:-moz-full-screen .statusbar { display: none !important; }
+:-moz-full-screen .player-area { width:100vw; height:100vh; background:#000; display:flex; flex-direction:column; justify-content:center; }
+:-moz-full-screen .video-wrap { width:100vw; height:100vh; display:flex; flex-direction:column; justify-content:center; background:#000; }
+:-moz-full-screen video { width:100vw; height:100vh; max-height:100vh; object-fit:contain; }
+
+/* Safari */
+:-webkit-full-screen .topbar,
+:-webkit-full-screen .sidebar,
+:-webkit-full-screen .info-panel,
+:-webkit-full-screen .statusbar { display: none !important; }
+:-webkit-full-screen .player-area { width:100vw; height:100vh; background:#000; display:flex; flex-direction:column; justify-content:center; }
+:-webkit-full-screen .video-wrap { width:100vw; height:100vh; display:flex; flex-direction:column; justify-content:center; background:#000; }
+:-webkit-full-screen video { width:100vw; height:100vh; max-height:100vh; object-fit:contain; }
 </style>
 </head>
 <body>
@@ -971,12 +1027,17 @@ video {
    ═══════════════════════════════════════════════════════ */
 const PLAYLISTS = [
   {
-    name: "BangladeshI tv",
-    // Replace with your actual M3U URL(s) or raw content
-    url: "https://raw.githubusercontent.com/abusaeeidx/BDxTV/refs/heads/main/roar-zone-playlist.m3u",
-    // Optional: extra HTTP headers to pass when fetching the M3U file itself
-    fetchHeaders: {}
-  }
+  name: "BangladeshI tv",
+  // Replace with your actual M3U URL(s) or raw content
+  url: "https://raw.githubusercontent.com/abusaeeidx/BDxTV/refs/heads/main/roar-zone-playlist.m3u",
+  // Optional: extra HTTP headers to pass when fetching the M3U file itself
+},
+{
+  name: "smart tv",
+  // Replace with your actual M3U URL(s) or raw content
+  url: "https://toffee-stream-keeper.lovable.app/toffee.m3u",
+  // Optional: extra HTTP headers to pass when fetching the M3U file itself
+}
   // Add more:
   // { name: "Sports Pack", url: "https://..." },
   // { name: "News HD",     url: "https://..." },
@@ -1200,11 +1261,12 @@ async function init() {
   
   // Restore last channel
   const last = loadLastChannel();
-  if (last && state.playlists[last.plIdx] && state.playlists[last.plIdx].channels[last.chIdx]) {
+  if (last && state.playlists[last.plIdx]?.channels[last.chIdx]) {
     switchPlaylist(last.plIdx);
-    setTimeout(() => playChannel(last.chIdx), 300);
+    setTimeout(() => playChannel(last.chIdx), 500);
   }
 
+  checkMobile();
   setTimeout(() => loadingScreen.classList.add('hidden'), 600);
 }
 
@@ -1346,6 +1408,9 @@ function playChannel(idx) {
   renderChannelList();
 
   // Update info panel
+  if (window.innerWidth <= 768) {
+    sidebar.classList.remove('mobile-open');
+  }
   emptyState.style.display = 'none';
   channelDetail.style.display = 'block';
   npName.textContent = ch.name;
@@ -1596,9 +1661,26 @@ videoEl.addEventListener('error',   () => {
 
 // Fullscreen
 $('fullscreenBtn').addEventListener('click', () => {
-  const wrap = $('videoWrap');
-  if (!document.fullscreenElement) wrap.requestFullscreen?.();
-  else document.exitFullscreen?.();
+  if (!document.fullscreenElement) {
+    ($('videoWrap').requestFullscreen ||
+      $('videoWrap').webkitRequestFullscreen ||
+      $('videoWrap').mozRequestFullScreen ||
+      (() => {})).call($('videoWrap'));
+  } else {
+    (document.exitFullscreen ||
+      document.webkitExitFullscreen ||
+      document.mozCancelFullScreen ||
+      (() => {})).call(document);
+  }
+});
+
+// Lock to landscape on mobile fullscreen
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    screen.orientation?.lock?.('landscape').catch(() => {});
+  } else {
+    screen.orientation?.unlock?.();
+  }
 });
 
 // Controls visibility (auto-hide)
@@ -1638,22 +1720,106 @@ searchInput.addEventListener('input', () => applyFilter());
 // Sidebar toggle
 let sidebarOpen = true;
 $('sidebarToggle').addEventListener('click', () => {
-  sidebarOpen = !sidebarOpen;
-  sidebar.classList.toggle('collapsed', !sidebarOpen);
-  $('sidebarToggle').classList.toggle('active', !sidebarOpen);
+  if (window.innerWidth <= 768) {
+    sidebar.classList.toggle('mobile-open');
+  } else {
+    sidebarOpen = !sidebarOpen;
+    sidebar.classList.toggle('collapsed', !sidebarOpen);
+    $('sidebarToggle').classList.toggle('active', !sidebarOpen);
+  }
 });
 
 // Mobile sidebar
 const mobileSidebarBtn = $('mobileSidebarBtn');
 mobileSidebarBtn.addEventListener('click', () => {
-  sidebar.classList.toggle('mobile-open');
+  if (state.playlists.length <= 1) return;
+  showPlaylistPopup();
 });
+
+function showPlaylistPopup() {
+  const existing = document.getElementById('plPopup');
+  const existingBd = document.getElementById('plBackdrop');
+  if (existing) { existing.remove(); existingBd?.remove(); return; }
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'plBackdrop';
+  backdrop.style.cssText = `
+    position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.5);
+  `;
+
+  const popup = document.createElement('div');
+  popup.id = 'plPopup';
+  popup.style.cssText = `
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background:var(--bg2); border-top:1px solid var(--bdr);
+    border-radius:16px 16px 0 0;
+    padding:12px 0 24px;
+    box-shadow:0 -8px 32px rgba(0,0,0,0.4);
+    animation: slideUp 0.25s ease;
+  `;
+
+  function closePopup() {
+    popup.remove();
+    backdrop.remove();
+  }
+
+  backdrop.addEventListener('click', closePopup);
+
+  const title = document.createElement('div');
+  title.style.cssText = `
+    font-size:12px; font-weight:700; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--t3);
+    padding:4px 20px 12px; font-family:var(--m);
+    border-bottom:1px solid var(--bdr); margin-bottom:8px;
+  `;
+  title.textContent = 'SELECT PLAYLIST';
+  popup.appendChild(title);
+
+  state.playlists.forEach((pl, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = `
+      display:flex; align-items:center; gap:12px;
+      padding:12px 20px; cursor:pointer;
+      transition:background 0.15s;
+      background:${idx === state.activePlaylist ? 'rgba(21,101,192,0.15)' : 'transparent'};
+    `;
+    row.innerHTML = `
+      <div style="width:8px;height:8px;border-radius:50%;
+        background:${idx === state.activePlaylist ? 'var(--blue3)' : 'var(--t3)'};
+        flex-shrink:0"></div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500;color:var(--text)">${escHtml(pl.name)}</div>
+        <div style="font-size:11px;color:var(--t2);font-family:var(--m)">${pl.channels.length} channels</div>
+      </div>
+      ${idx === state.activePlaylist ? '<div style="font-size:16px">✓</div>' : ''}
+    `;
+    row.addEventListener('click', () => {
+      switchPlaylist(idx);
+      closePopup();
+      updateMobilePlaylistBtn();
+    });
+    popup.appendChild(row);
+  });
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(popup);
+}
+
+function updateMobilePlaylistBtn() {
+  if (state.playlists.length <= 1) {
+    mobileSidebarBtn.style.display = 'none';
+    return;
+  }
+  mobileSidebarBtn.style.display = 'flex';
+}
 
 // Theme toggle
 $('themeToggle').addEventListener('click', () => {
   const html = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('ks_theme', next);
 });
 
 // Keyboard shortcuts
@@ -1671,8 +1837,16 @@ document.addEventListener('keydown', e => {
 // Mobile detection
 function checkMobile() {
   const isMobile = window.innerWidth <= 768;
-  mobileSidebarBtn.style.display = isMobile ? 'flex' : 'none';
-  if (isMobile) sidebar.classList.remove('collapsed');
+  if (isMobile) {
+    sidebar.classList.remove('collapsed');
+    updateMobilePlaylistBtn();
+  } else {
+    mobileSidebarBtn.style.display = 'none';
+  }
+}
+// Hide fullscreen btn if not supported
+if (!document.documentElement.requestFullscreen) {
+  $('fullscreenBtn').style.display = 'none';
 }
 window.addEventListener('resize', checkMobile);
 checkMobile();
@@ -1686,11 +1860,6 @@ function playChannelWithClose(idx) {
   }
 }
 
-// Override playChannel with mobile close behavior
-channelList.addEventListener('click', () => {
-  if (window.innerWidth <= 768) sidebar.classList.remove('mobile-open');
-});
-
 /* ── Utils ── */
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1699,10 +1868,6 @@ function escAttr(str) {
   return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-// Save last channel on play
-const _origPlayChannel = playChannel;
-window.playChannel = playChannel; // keep ref
-
 // Persist last played
 function saveLastChannel(plIdx, chIdx) {
   try { localStorage.setItem('sv_last', JSON.stringify({plIdx, chIdx})); } catch{}
@@ -1710,6 +1875,11 @@ function saveLastChannel(plIdx, chIdx) {
 function loadLastChannel() {
   try { return JSON.parse(localStorage.getItem('sv_last')); } catch{ return null; }
 }
+
+// Detect OS theme on first load
+const savedTheme = localStorage.getItem('ks_theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+document.documentElement.setAttribute('data-theme', savedTheme || (prefersDark ? 'dark' : 'light'));
 
 /* ── BOOT ── */
 init();
