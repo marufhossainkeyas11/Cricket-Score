@@ -550,7 +550,7 @@ video {
 .ctrl-btn {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.9);
   cursor: pointer;
   font-size: 18px;
   padding: 4px;
@@ -1074,16 +1074,18 @@ video {
               <path id="ppIcon" d="M5 3.5v11L14 9z" />
             </svg>
           </button>
-          <button class="ctrl-btn" id="prevBtn" title="Previous">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M3 2h2v12H3zm2.5 6L13 14V2z" />
-            </svg>
-          </button>
-          <button class="ctrl-btn" id="nextBtn" title="Next">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M13 2h-2v12h2zm-2.5 6L4 14V2z" />
-            </svg>
-          </button>
+          <span style="display:flex; gap:2px">
+            <button class="ctrl-btn"  id="prevBtn" title="Previous">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.54-.313 1.232.066 1.232.696v7.384c0 .63-.692 1.01-1.232.697L5 8.753V12a.5.5 0 0 1-1 0z" />
+              </svg>
+            </button>
+            <button class="ctrl-btn" id="nextBtn" title="Next">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.693 3.3 4 3.678 4 4.308v7.384c0 .63.692 1.01 1.233.697L11.5 8.753V12a.5.5 0 0 0 1 0z" />
+              </svg>
+            </button>
+          </span>
           
           <!-- Mute only (no slider here) -->
           <button class="ctrl-btn" id="muteBtn" title="Mute">
