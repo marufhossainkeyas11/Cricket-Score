@@ -553,7 +553,7 @@ video {
   color: rgba(255,255,255,0.9);
   cursor: pointer;
   font-size: 18px;
-  padding: 4px;
+  padding: 3px;
   border-radius: 6px;
   display: flex; align-items: center;
   transition: color var(--trans), background var(--trans);
@@ -576,7 +576,7 @@ video {
   font-size: 9px;
   color: rgba(255, 255, 255, 0.9);
   margin-left: 4px;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.8);
   padding: 2px 2px;
   border-radius: 4px;
   letter-spacing: -0.5px;
@@ -1058,7 +1058,7 @@ video {
 
       <div class="vid-overlay" id="vidOverlay" >
         <div class="big-play" id="bigPlay">
-          <svg id="bigPlayIcon" width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="bigPlayIcon" width="32" height="32" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="white"><path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393"/></svg>
         </div>
       </div>
 
@@ -1069,31 +1069,30 @@ video {
           </div>
         </div>
         <div class="controls-row">
-          <button class="ctrl-btn" id="playPauseBtn" title="Play/Pause">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-              <path id="ppIcon" d="M5 3.5v11L14 9z" />
-            </svg>
-          </button>
-          <span style="display:flex; gap:2px">
+          <span style="display:flex; transform: translateX(-4px); gap:2px">
+            <button class="ctrl-btn" id="playPauseBtn" title="Play/Pause">
+              <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" viewBox="0 0 16 16">
+                <path id="ppIcon" d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393" />
+              </svg>
+            </button>
             <button class="ctrl-btn"  id="prevBtn" title="Previous">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M4 4a.5.5 0 0 1 1 0v3.248l6.267-3.636c.54-.313 1.232.066 1.232.696v7.384c0 .63-.692 1.01-1.232.697L5 8.753V12a.5.5 0 0 1-1 0z" />
               </svg>
             </button>
             <button class="ctrl-btn" id="nextBtn" title="Next">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M12.5 4a.5.5 0 0 0-1 0v3.248L5.233 3.612C4.693 3.3 4 3.678 4 4.308v7.384c0 .63.692 1.01 1.233.697L11.5 8.753V12a.5.5 0 0 0 1 0z" />
               </svg>
             </button>
+          
+            <!-- Mute only (no slider here) -->
+            <button class="ctrl-btn" id="muteBtn" title="Mute">
+              <svg width="24" height="24" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                <path id="volIcon" d="M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12zm3.025 4a4.5 4.5 0 0 1-1.318 3.182L10 10.475A3.5 3.5 0 0 0 11.025 8 3.5 3.5 0 0 0 10 5.525l.707-.707A4.5 4.5 0 0 1 12.025 8" />
+              </svg>
+            </button>
           </span>
-          
-          <!-- Mute only (no slider here) -->
-          <button class="ctrl-btn" id="muteBtn" title="Mute">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path id="volIcon" d="M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
-            </svg>
-          </button>
-          
           <!-- Volume slider: desktop only -->
           <input class="vol-slider vol-slider-desktop" id="volSlider" type="range" min="0" max="1" step="0.05" value="1">
           
@@ -1106,7 +1105,7 @@ video {
           <!-- More menu -->
           <div class="more-menu-wrap">
             <button class="ctrl-btn" id="moreBtn" title="More">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
                 <circle cx="3" cy="8" r="1.4" />
                 <circle cx="8" cy="8" r="1.4" />
                 <circle cx="13" cy="8" r="1.4" />
@@ -1115,8 +1114,8 @@ video {
             <div class="more-popup" id="morePopup">
               <!-- Volume row (mobile) -->
               <div class="more-popup-row" id="moreVolRow">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:#fff;flex-shrink:0">
-                  <path id="volIcon2" d="M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
+                <svg width="21" height="21" viewBox="0 0 16 16" fill="currentColor" style="color:#fff;flex-shrink:0;transform:translateX(-2px)">
+                  <path id="volIcon2" d="M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12zm3.025 4a4.5 4.5 0 0 1-1.318 3.182L10 10.475A3.5 3.5 0 0 0 11.025 8 3.5 3.5 0 0 0 10 5.525l.707-.707A4.5 4.5 0 0 1 12.025 8" />
                 </svg>
                 <span class="more-popup-label">Volume</span>
                 <input class="vol-slider" id="volSliderMobile" type="range" min="0" max="1" step="0.05" value="1">
@@ -1145,7 +1144,7 @@ video {
             </svg>
           </button>
           
-          <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen">
+          <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen" style="margin-right: 2px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor">
               <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 1-1 0v-4A1.5 1.5 0 0 1 1.5 0h4a.5.5 0 0 1 0 1zM10 .5a.5.5 0 0 1 .5-.5h4A1.5 1.5 0 0 1 16 1.5v4a.5.5 0 0 1-1 0v-4a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 1-.5-.5M.5 10a.5.5 0 0 1 .5.5v4a.5.5 0 0 0 .5.5h4a.5.5 0 0 1 0 1h-4A1.5 1.5 0 0 1 0 14.5v-4a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v4a1.5 1.5 0 0 1-1.5 1.5h-4a.5.5 0 0 1 0-1h4a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 1 .5-.5" />
             </svg>
@@ -1795,7 +1794,7 @@ videoWrap.addEventListener('click', (e) => {
     // double tap: play/pause
     togglePlayPause();
     $('bigPlayIcon').querySelector('path').setAttribute('d',
-      state.isPlaying ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
+      state.isPlaying ? 'M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5' : 'm11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393');
     bigPlay.classList.add('show');
     setTimeout(() => bigPlay.classList.remove('show'), 700);
     videoWrap.classList.add('controls-visible');
@@ -1821,9 +1820,9 @@ function togglePlayPause() {
 function updatePlayPauseIcon() {
   const icon = $('ppIcon');
   if (state.isPlaying) {
-    icon.setAttribute('d', 'M4 3h3v12H4zm7 0h3v12h-3z');
+    icon.setAttribute('d', 'M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5m5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5');
   } else {
-    icon.setAttribute('d', 'M5 3.5v11L14 9z');
+    icon.setAttribute('d', 'm11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393');
   }
 }
 
@@ -1842,9 +1841,9 @@ $('muteBtn').addEventListener('click', () => {
 function updateVolIcon() {
   const icon = $('volIcon');
   if (state.isMuted || videoEl.volume === 0) {
-    icon.setAttribute('d', 'M3 5H0v6h3l5 4V1L3 5zM13 8l2-2-1.5-1.5L12 6 10.5 4.5 9 6l2 2-2 2 1.5 1.5L12 10l1.5 1.5L15 10z');
+    icon.setAttribute('d', 'M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06m7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0');
   } else {
-    icon.setAttribute('d', 'M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z');
+    icon.setAttribute('d', 'M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12zm3.025 4a4.5 4.5 0 0 1-1.318 3.182L10 10.475A3.5 3.5 0 0 0 11.025 8 3.5 3.5 0 0 0 10 5.525l.707-.707A4.5 4.5 0 0 1 12.025 8');
   }
 }
 
