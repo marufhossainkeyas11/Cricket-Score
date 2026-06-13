@@ -415,9 +415,8 @@ video {
   pointer-events: none;
   justify-content: space-between;
 }
-.video-wrap:hover .now-playing-bar,
 .video-wrap.controls-visible .now-playing-bar { opacity: 1; }
-
+  
 :fullscreen .now-playing-bar,
 :-webkit-full-screen .now-playing-bar,
 :-moz-full-screen .now-playing-bar {
@@ -509,9 +508,8 @@ video {
   opacity: 0;
   transition: opacity var(--trans);
 }
-.video-wrap:hover .vid-controls,
 .video-wrap.controls-visible .vid-controls { opacity: 1; }
-
+  
 .progress-bar-wrap {
   position: relative;
   height: 5px;
@@ -1356,6 +1354,7 @@ const chCount      = $('chCount');
 const sidebar      = $('sidebar');
 const loadingScreen= $('loadingScreen');
 const toastEl      = $('toast');
+const videoWrap = $('videoWrap');
 
 /* ═══════════════════════════════════════════════════════
    TOAST
@@ -1745,14 +1744,52 @@ function setStatus(text, color) {
 /* ═══════════════════════════════════════════════════════
    PLAYBACK CONTROLS
    ═══════════════════════════════════════════════════════ */
-$('playPauseBtn').addEventListener('click', togglePlayPause);
-$('vidOverlay').addEventListener('click', () => {
-  if (state.currentIdx === -1) return;
+$('playPauseBtn').addEventListener('click', () => {
   togglePlayPause();
-  // Show big play indicator briefly
-  $('bigPlayIcon').querySelector('path').setAttribute('d', state.isPlaying ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
-  bigPlay.classList.add('show');
-  setTimeout(() => bigPlay.classList.remove('show'), 600);
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => videoWrap.classList.remove('controls-visible'), 3000);
+});
+
+let tapTimer = null;
+let tapCount = 0;
+
+videoWrap.addEventListener('click', (e) => {
+  if (state.currentIdx === -1) return;
+  // শুধু interactive element গুলো ignore
+  if (e.target.closest('.ctrl-btn')) return;
+  if (e.target.closest('input[type="range"]')) return;
+  if (e.target.closest('.progress-bar-wrap')) return;
+  if (e.target.closest('.more-popup')) return;
+
+  tapCount++;
+
+  if (tapCount === 1) {
+    tapTimer = setTimeout(() => {
+      tapCount = 0;
+      // single tap: toggle controls
+      if (videoWrap.classList.contains('controls-visible')) {
+        videoWrap.classList.remove('controls-visible');
+        clearTimeout(hideTimer);
+      } else {
+        videoWrap.classList.add('controls-visible');
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => videoWrap.classList.remove('controls-visible'), 3000);
+      }
+    }, 250);
+
+  } else if (tapCount === 2) {
+    clearTimeout(tapTimer);
+    tapCount = 0;
+    // double tap: play/pause
+    togglePlayPause();
+    $('bigPlayIcon').querySelector('path').setAttribute('d',
+      state.isPlaying ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
+    bigPlay.classList.add('show');
+    setTimeout(() => bigPlay.classList.remove('show'), 700);
+    videoWrap.classList.add('controls-visible');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => videoWrap.classList.remove('controls-visible'), 3000);
+  }
 });
 
 function togglePlayPause() {
@@ -1946,13 +1983,13 @@ document.addEventListener('fullscreenchange', () => {
 
 // Controls visibility (auto-hide)
 let hideTimer;
-const videoWrap = $('videoWrap');
-['mousemove','touchstart'].forEach(ev => {
-  videoWrap.addEventListener(ev, () => {
-    videoWrap.classList.add('controls-visible');
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => videoWrap.classList.remove('controls-visible'), 3000);
-  });
+  
+// Desktop এ mousemove এ show
+videoWrap.addEventListener('mousemove', () => {
+  if (window.matchMedia('(pointer: coarse)').matches) return;
+  videoWrap.classList.add('controls-visible');
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => videoWrap.classList.remove('controls-visible'), 3000);
 });
 
 // Retry button
