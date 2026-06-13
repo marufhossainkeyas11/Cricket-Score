@@ -1826,18 +1826,56 @@ function updatePlayPauseIcon() {
   }
 }
 
-// Volume
-$('volSlider').addEventListener('input', e => {
-  videoEl.volume = e.target.value;
-  state.isMuted = (e.target.value == 0);
-  updateVolIcon();
-});
+/* ═══════════════════════════════
+   VOLUME — single source of truth
+   ═══════════════════════════════ */
+function setVolume(vol, muted) {
+  // Clamp
+  vol = Math.max(0, Math.min(1, vol));
+  
+  videoEl.volume = vol;
+  videoEl.muted = muted;
+  state.isMuted = muted;
+  
+  // Sliders
+  const displayVal = muted ? 0 : vol;
+  $('volSlider').value = displayVal;
+  $('volSliderMobile').value = displayVal;
+  
+  // Icons (both volIcon + volIcon2)
+  const mutedPath = 'M6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06m7.137 2.096a.5.5 0 0 1 0 .708L12.207 8l1.647 1.646a.5.5 0 0 1-.708.708L11.5 8.707l-1.646 1.647a.5.5 0 0 1-.708-.708L10.793 8 9.146 6.354a.5.5 0 1 1 .708-.708L11.5 7.293l1.646-1.647a.5.5 0 0 1 .708 0';
+  const unmutedPath = 'M9 4a.5.5 0 0 0-.812-.39L5.825 5.5H3.5A.5.5 0 0 0 3 6v4a.5.5 0 0 0 .5.5h2.325l2.363 1.89A.5.5 0 0 0 9 12zm3.025 4a4.5 4.5 0 0 1-1.318 3.182L10 10.475A3.5 3.5 0 0 0 11.025 8 3.5 3.5 0 0 0 10 5.525l.707-.707A4.5 4.5 0 0 1 12.025 8';
+  const d = (muted || vol === 0) ? mutedPath : unmutedPath;
+  $('volIcon').setAttribute('d', d);
+  //$('volIcon2').setAttribute('d', d);
+}
+
+// Mute toggle: volume মনে রাখে
+let lastVol = 1;
 $('muteBtn').addEventListener('click', () => {
-  state.isMuted = !state.isMuted;
-  videoEl.muted = state.isMuted;
-  $('volSlider').value = state.isMuted ? 0 : videoEl.volume;
-  updateVolIcon();
+  if (state.isMuted || videoEl.volume === 0) {
+    // Unmute — আগের volume restore
+    setVolume(lastVol || 1, false);
+  } else {
+    lastVol = videoEl.volume;
+    setVolume(videoEl.volume, true);
+  }
 });
+
+// Desktop slider
+$('volSlider').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (v > 0) lastVol = v;
+  setVolume(v, v === 0);
+});
+
+// Mobile slider
+$('volSliderMobile').addEventListener('input', e => {
+  const v = parseFloat(e.target.value);
+  if (v > 0) lastVol = v;
+  setVolume(v, v === 0);
+});
+
 function updateVolIcon() {
   const icon = $('volIcon');
   if (state.isMuted || videoEl.volume === 0) {
@@ -1950,18 +1988,6 @@ $('pipRow').addEventListener('click', () => { morePopup.classList.remove('open')
 
 document.addEventListener('enterpictureinpicture', () => $('pipBtn').classList.add('active'));
 document.addEventListener('leavepictureinpicture', () => $('pipBtn').classList.remove('active'));
-
-// Volume slider sync
-const volSliderMobile = $('volSliderMobile');
-volSliderMobile.addEventListener('input', e => {
-  videoEl.volume = e.target.value;
-  $('volSlider').value = e.target.value;
-  state.isMuted = (e.target.value == 0);
-  updateVolIcon();
-});
-$('volSlider').addEventListener('input', e => {
-  volSliderMobile.value = e.target.value;
-});
 
 // Layout sync: vol outside (>600px) = pipBtn + no menu
 //              vol inside  (≤600px) = moreBtn + pipRow
