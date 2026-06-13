@@ -571,14 +571,13 @@ video {
 }
 
 .time-display {
-  font-family: var(--m);
-  font-size: 12px;
+  font-size: 9px;
   color: rgba(255, 255, 255, 0.9);
   margin-left: 4px;
   background: rgba(0, 0, 0, 0.4);
-  padding: 2px 8px;
+  padding: 2px 2px;
   border-radius: 4px;
-  letter-spacing: 0.5px;
+  letter-spacing: -0.5px;
   text-align: center;
 }
 
@@ -915,6 +914,69 @@ video {
 @keyframes spin {
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
+
+/* ── MORE MENU ─────────────────────── */
+.more-menu-wrap {
+  position: relative;
+}
+
+.more-popup {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  background: rgba(15, 20, 30, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 180px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  z-index: 20;
+  animation: popIn 0.15s ease;
+}
+.more-popup.open { display: block; }
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.more-popup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background var(--trans);
+  background: rgba(255,255,255,0.07);
+}
+.more-popup-row:hover { background: rgba(255,255,255,0.12) }
+
+.more-popup-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  font-family: var(--f);
+  white-space: nowrap;
+  min-width: 52px;
+}
+
+.more-popup-row .vol-slider {
+  width: 90px;
+  accent-color: var(--blue3);
+}
+
+.more-popup-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 4px 6px;
+}
+
+/* ── MOBILE: vol-slider desktop only ── */
+@media (max-width: 450px) {
+  .vol-slider-desktop { display: none; }
+}
 </style>
 </head>
 <body>
@@ -1007,38 +1069,81 @@ video {
         <div class="controls-row">
           <button class="ctrl-btn" id="playPauseBtn" title="Play/Pause">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-              <path id="ppIcon" d="M5 3.5v11L14 9z"/>
+              <path id="ppIcon" d="M5 3.5v11L14 9z" />
             </svg>
           </button>
           <button class="ctrl-btn" id="prevBtn" title="Previous">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M3 2h2v12H3zm2.5 6L13 14V2z"/>
+              <path d="M3 2h2v12H3zm2.5 6L13 14V2z" />
             </svg>
           </button>
           <button class="ctrl-btn" id="nextBtn" title="Next">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M13 2h-2v12h2zm-2.5 6L4 14V2z"/>
+              <path d="M13 2h-2v12h2zm-2.5 6L4 14V2z" />
             </svg>
           </button>
-
-          <div class="vol-wrap">
-            <button class="ctrl-btn" id="muteBtn" title="Mute">
+          
+          <!-- Mute only (no slider here) -->
+          <button class="ctrl-btn" id="muteBtn" title="Mute">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path id="volIcon" d="M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
+            </svg>
+          </button>
+          
+          <!-- Volume slider: desktop only -->
+          <input class="vol-slider vol-slider-desktop" id="volSlider" type="range" min="0" max="1" step="0.05" value="1">
+          
+          <div class="ctrl-spacer"></div>
+          
+          <span class="time-display" id="timeDisplay">LIVE</span>
+          
+          <span class="quality-badge" id="qualityBadge">HLS</span>
+          
+          <!-- More menu -->
+          <div class="more-menu-wrap">
+            <button class="ctrl-btn" id="moreBtn" title="More">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path id="volIcon" d="M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/>
+                <circle cx="3" cy="8" r="1.4" />
+                <circle cx="8" cy="8" r="1.4" />
+                <circle cx="13" cy="8" r="1.4" />
               </svg>
             </button>
-            <input class="vol-slider" id="volSlider" type="range" min="0" max="1" step="0.05" value="1">
+            <div class="more-popup" id="morePopup">
+              <!-- Volume row (mobile) -->
+              <div class="more-popup-row" id="moreVolRow">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:#fff;flex-shrink:0">
+                  <path id="volIcon2" d="M3 5H0v6h3l5 4V1L3 5zm9.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z" />
+                </svg>
+                <span class="more-popup-label">Volume</span>
+                <input class="vol-slider" id="volSliderMobile" type="range" min="0" max="1" step="0.05" value="1">
+              </div>
+              
+              <div class="more-popup-divider"></div>
+              
+              <!-- PiP -->
+              <div class="more-popup-row" id="pipRow" style="cursor:pointer; color:#fff;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pip" viewBox="0 0 16 16">
+                  <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5zM1.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5z" />
+                  <path d="M8 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5z" />
+                </svg>
+                <span class="more-popup-label" style="flex:1">Picture in Picture</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-caret-right-fill" viewBox="0 0 16 16">
+                  <path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z" />
+                </svg>
+              </div>
+            </div>
           </div>
-
-          <span class="time-display" id="timeDisplay">LIVE</span>
-
-          <div class="ctrl-spacer"></div>
-
-          <span class="quality-badge" id="qualityBadge">HLS</span>
-
+          
+          <button class="ctrl-btn" id="pipBtn" title="Picture in Picture">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-pip" viewBox="0 0 16 16">
+              <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12.5zM1.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5z" />
+              <path d="M8 8.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5z" />
+            </svg>
+          </button>
+          
           <button class="ctrl-btn" id="fullscreenBtn" title="Fullscreen">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5"/>
+              <path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" />
             </svg>
           </button>
         </div>
@@ -1760,6 +1865,60 @@ videoEl.addEventListener('error',   () => {
     }
   }
 });
+
+// More menu toggle
+const moreBtn = $('moreBtn');
+const morePopup = $('morePopup');
+moreBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  morePopup.classList.toggle('open');
+});
+document.addEventListener('click', () => morePopup.classList.remove('open'));
+morePopup.addEventListener('click', e => e.stopPropagation());
+
+// PiP action (shared)
+async function togglePiP() {
+  try {
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    } else {
+      await videoEl.requestPictureInPicture();
+    }
+  } catch(e) { showToast('PiP not supported on this device'); }
+}
+
+$('pipBtn').addEventListener('click', togglePiP);
+$('pipRow').addEventListener('click', () => { morePopup.classList.remove('open'); togglePiP(); });
+
+document.addEventListener('enterpictureinpicture', () => $('pipBtn').classList.add('active'));
+document.addEventListener('leavepictureinpicture', () => $('pipBtn').classList.remove('active'));
+
+// Volume slider sync
+const volSliderMobile = $('volSliderMobile');
+volSliderMobile.addEventListener('input', e => {
+  videoEl.volume = e.target.value;
+  $('volSlider').value = e.target.value;
+  state.isMuted = (e.target.value == 0);
+  updateVolIcon();
+});
+$('volSlider').addEventListener('input', e => {
+  volSliderMobile.value = e.target.value;
+});
+
+// Layout sync: vol outside (>600px) = pipBtn + no menu
+//              vol inside  (≤600px) = moreBtn + pipRow
+function syncControlLayout() {
+  const isMobile = window.innerWidth <= 450;
+  // volume slider
+  $('volSlider').style.display        = isMobile ? 'none' : '';
+  // pip
+  $('pipBtn').style.display           = isMobile ? 'none' : (document.pictureInPictureEnabled ? '' : 'none');
+  // more button & pip row
+  $('moreBtn').style.display          = isMobile ? '' : 'none';
+  $('pipRow').style.display           = isMobile && document.pictureInPictureEnabled ? 'flex' : 'none';
+}
+syncControlLayout();
+window.addEventListener('resize', syncControlLayout);
 
 // Fullscreen
 $('fullscreenBtn').addEventListener('click', () => {
