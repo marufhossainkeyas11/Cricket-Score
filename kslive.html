@@ -7,7 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22KSLIVE%22%2C%22short_name%22%3A%22KSLIVE%22%2C%22description%22%3A%22Free%20TV%20channels%20live%20streaming%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%220d1117%22%2C%22theme_color%22%3A%221565C0%22%2C%22orientation%22%3A%22any%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22.%2Fkslive.svg%22%2C%22sizes%22%3A%22any%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+<meta name="theme-color" content="#1565C0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KSLIVE">
+<link rel="apple-touch-icon" href="./kslive.svg">
 <style>
 /* ── RESET ──────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -980,6 +986,41 @@ video {
   .vol-slider-desktop { display: none; }
 }
 </style>
+<script>
+if ('serviceWorker' in navigator) {
+  const SW_SRC = `
+const CACHE = 'kslive-v1';
+const SHELL = ['./kslive.svg'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  // শুধু SVG icon cache করবে, বাকি সব network-first
+  const url = new URL(e.request.url);
+  if (url.pathname.endsWith('.svg')) {
+    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    return;
+  }
+  // অন্য সব request pass-through
+});
+`;
+  const blob = new Blob([SW_SRC], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, { scope: './' })
+    .then(() => console.log('SW registered'))
+    .catch(e => console.warn('SW failed:', e));
+}
+</script>
 </head>
 <body>
 
