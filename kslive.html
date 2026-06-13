@@ -1445,9 +1445,11 @@ async function init() {
   const last = loadLastChannel();
   if (last && state.playlists[last.plIdx]?.channels[last.chIdx]) {
     switchPlaylist(last.plIdx);
-    setTimeout(() => playChannel(last.chIdx), 500);
+    setTimeout(() => {
+      playChannel(last.chIdx);
+      setTimeout(() => videoEl.play().catch(() => {}), 1000);
+    }, 500);
   }
-
   checkMobile();
   setTimeout(() => loadingScreen.classList.add('hidden'), 600);
 }
@@ -1977,10 +1979,18 @@ async function togglePiP() {
   try {
     if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
-    } else {
-      await videoEl.requestPictureInPicture();
+      return;
     }
-  } catch(e) { showToast('PiP not supported on this device'); }
+    // Fullscreen থাকলে আগে exit করো
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      // Exit animate হতে একটু সময় লাগে
+      await new Promise(r => setTimeout(r, 150));
+    }
+    await videoEl.requestPictureInPicture();
+  } catch (e) {
+    showToast('PiP not supported on this device');
+  }
 }
 
 $('pipBtn').addEventListener('click', togglePiP);
@@ -2176,9 +2186,8 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space')         { e.preventDefault(); togglePlayPause(); }
   if (e.code === 'ArrowRight')    navigateChannel(1);
   if (e.code === 'ArrowLeft')     navigateChannel(-1);
-  if (e.code === 'ArrowUp')       { videoEl.volume = Math.min(1, videoEl.volume + 0.1); $('volSlider').value = videoEl.volume; }
-  if (e.code === 'ArrowDown')     { videoEl.volume = Math.max(0, videoEl.volume - 0.1); $('volSlider').value = videoEl.volume; }
-  if (e.code === 'KeyF')          $('fullscreenBtn').click();
+  if (e.code === 'ArrowUp')       { const v = Math.min(1, videoEl.volume + 0.1); setVolume(v, false); }
+  if (e.code === 'ArrowDown')     { const v = Math.max(0, videoEl.volume - 0.1); setVolume(v, v === 0); }  if (e.code === 'KeyF')          $('fullscreenBtn').click();
   if (e.code === 'KeyM')          $('muteBtn').click();
 });
 
